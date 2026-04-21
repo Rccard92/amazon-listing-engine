@@ -22,7 +22,7 @@ export function ScoreCard({ title, score, delta, description }: ScoreCardProps) 
       <CardContent className="space-y-4">
         <div className="flex items-end gap-2">
           <span className="text-3xl font-semibold tracking-tight text-slate-900">{safeScore}</span>
-          <span className="pb-1 text-sm text-slate-500">/ 100</span>
+          <span className="pb-1 text-sm text-slate-500">su 100</span>
         </div>
         <div className="h-2.5 rounded-full bg-slate-100">
           <div

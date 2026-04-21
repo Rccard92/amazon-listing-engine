@@ -2,18 +2,27 @@
 
 import { useRef, useState } from "react";
 
+import { it } from "@/lib/i18n/it";
 import { cn } from "@/lib/utils";
+
+const defaults = it.newListing.dropzone;
 
 type UploadDropzoneProps = {
   title?: string;
   description?: string;
+  emptyMessage?: string;
+  selectedHeading?: string;
+  footerHint?: string;
   accept?: string;
   onFilesSelected?: (files: File[]) => void;
 };
 
 export function UploadDropzone({
-  title = "Carica file Helium10",
-  description = "Trascina il CSV qui oppure clicca per selezionarlo.",
+  title = defaults.title,
+  description = defaults.description,
+  emptyMessage = defaults.empty,
+  selectedHeading = defaults.selectedHeading,
+  footerHint,
   accept = ".csv,text/csv",
   onFilesSelected,
 }: UploadDropzoneProps) {
@@ -59,6 +68,7 @@ export function UploadDropzone({
               stroke="currentColor"
               strokeWidth="1.8"
               className="h-6 w-6"
+              aria-hidden
             >
               <path d="M12 3v12" />
               <path d="m7 8 5-5 5 5" />
@@ -80,19 +90,20 @@ export function UploadDropzone({
 
       {fileNames.length > 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-          <p className="mb-2 font-medium text-slate-800">File selezionati</p>
+          <p className="mb-2 font-medium text-slate-800">{selectedHeading}</p>
           <ul className="space-y-1">
-            {fileNames.map((name) => (
-              <li key={name}>{name}</li>
+            {fileNames.map((name, index) => (
+              <li key={`${name}-${index}`}>{name}</li>
             ))}
           </ul>
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-4 text-sm text-slate-500">
-          Nessun file caricato. Supportato formato CSV (Helium10 export).
+        <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-4 text-sm text-slate-600">
+          {emptyMessage}
         </div>
       )}
+
+      {footerHint ? <p className="text-xs leading-relaxed text-slate-500">{footerHint}</p> : null}
     </div>
   );
 }
-

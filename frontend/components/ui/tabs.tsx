@@ -14,9 +14,11 @@ type TabsProps = {
   items: TabItem[];
   defaultKey?: string;
   className?: string;
+  /** Nome accessibile del gruppo di schede (lettori schermo). */
+  groupLabel?: string;
 };
 
-export function Tabs({ items, defaultKey, className }: TabsProps) {
+export function Tabs({ items, defaultKey, className, groupLabel }: TabsProps) {
   const fallback = items[0]?.key ?? "";
   const [active, setActive] = useState(defaultKey ?? fallback);
 
@@ -27,7 +29,10 @@ export function Tabs({ items, defaultKey, className }: TabsProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="inline-flex w-full flex-wrap gap-2 rounded-2xl bg-slate-100/80 p-1.5 sm:w-auto">
+      <div
+        className="inline-flex w-full flex-wrap gap-2 rounded-2xl bg-slate-100/80 p-1.5 sm:w-auto"
+        {...(groupLabel ? { "aria-label": groupLabel } : {})}
+      >
         {items.map((item) => {
           const isActive = item.key === current?.key;
           return (

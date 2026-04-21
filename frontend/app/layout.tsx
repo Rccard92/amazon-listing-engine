@@ -13,9 +13,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Amazon Listing Engine",
+  title: "Amazon Listing Engine — ottimizza le tue inserzioni",
   description:
-    "Piattaforma per generare e ottimizzare inserzioni Amazon con workflow guidati e ingestion strutturata.",
+    "Crea e migliora schede prodotto Amazon con percorsi guidati, spiegazioni chiare e strumenti per parole chiave e confronto con i concorrenti.",
 };
 
 export default function RootLayout({

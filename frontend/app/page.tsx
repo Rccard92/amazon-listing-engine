@@ -2,45 +2,59 @@
 import { Badge } from "@/components/ui/badge";
 import { ScoreCard } from "@/components/ui/score-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { it } from "@/lib/i18n/it";
 import { fetchHealthLive } from "@/lib/api";
+
+function mapHealthToLabel(status: string): { label: string; variant: "success" | "warning" | "neutral" } {
+  const s = status.toLowerCase();
+  if (s === "ok" || s === "healthy") {
+    return { label: it.home.statusConnected, variant: "success" };
+  }
+  if (s === "degraded") {
+    return { label: it.home.statusLimited, variant: "warning" };
+  }
+  return { label: status, variant: "neutral" };
+}
 
 export default async function HomePage() {
   const health = await fetchHealthLive();
+  const healthBadge = health ? mapHealthToLabel(health.status) : null;
 
   return (
     <main className="space-y-8">
       <header className="surface-card rounded-4xl p-8 sm:p-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_320px] lg:items-end">
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Amazon Listing Engine</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{it.home.kicker}</p>
             <h1 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-              UI shell premium per costruire, migliorare e differenziare listing Amazon.
+              {it.home.heroTitle}
             </h1>
-            <p className="max-w-2xl text-base text-slate-600">
-              Flussi guidati, cards arrotondate, spaziatura ampia e componenti riusabili pronti per integrare ingestion, scoring e generation.
-            </p>
+            <p className="max-w-2xl text-base text-slate-600">{it.home.heroBody}</p>
           </div>
 
           <Card className="border-slate-200/80">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-800">Stato API</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-800">{it.home.statusCardTitle}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {health ? (
+            <CardContent className="space-y-3">
+              {health && healthBadge ? (
                 <>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-600">Backend</span>
-                    <Badge variant="success">{health.status}</Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={healthBadge.variant}>{healthBadge.label}</Badge>
                   </div>
-                  <p className="text-xs text-slate-500">{health.service}</p>
+                  <p className="text-xs leading-relaxed text-slate-600">{it.home.statusDetailWhenUpPrefix}</p>
+                  <details className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-[11px] text-slate-500">
+                    <summary className="cursor-pointer font-medium text-slate-600">{it.home.statusTechnicalToggle}</summary>
+                    <p className="mt-2 font-mono text-[10px] text-slate-500">{health.service}</p>
+                  </details>
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-600">Backend</span>
-                    <Badge variant="warning">offline</Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="warning">{it.home.statusDisconnected}</Badge>
                   </div>
-                  <p className="text-xs text-slate-500">Configura NEXT_PUBLIC_API_URL per collegare il backend.</p>
+                  <p className="text-xs leading-relaxed text-slate-600">{it.home.statusDetailWhenDown}</p>
+                  <p className="text-[11px] leading-relaxed text-slate-500">{it.home.statusDetailHintTechnical}</p>
                 </>
               )}
             </CardContent>
@@ -49,22 +63,40 @@ export default async function HomePage() {
       </header>
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <ScoreCard title="Listing quality" score={78} delta="+6" description="Miglioramento medio previsto dopo audit e revisione keyword." />
-        <ScoreCard title="Coverage keyword" score={64} delta="+12" description="Copertura parziale: manca cluster long-tail ad alta intenzione." />
-        <ScoreCard title="Compliance" score={92} delta="stabile" description="Baseline in linea con vincoli principali del marketplace." />
-        <ScoreCard title="Execution" score={35} description="Shell pronto: in attesa della logica applicativa per i workflow." />
+        <ScoreCard
+          title={it.home.scoreCards.quality.title}
+          score={78}
+          delta={it.home.scoreCards.quality.delta}
+          description={it.home.scoreCards.quality.description}
+        />
+        <ScoreCard
+          title={it.home.scoreCards.keywords.title}
+          score={64}
+          delta={it.home.scoreCards.keywords.delta}
+          description={it.home.scoreCards.keywords.description}
+        />
+        <ScoreCard
+          title={it.home.scoreCards.compliance.title}
+          score={92}
+          delta={it.home.scoreCards.compliance.delta}
+          description={it.home.scoreCards.compliance.description}
+        />
+        <ScoreCard
+          title={it.home.scoreCards.progress.title}
+          score={35}
+          description={it.home.scoreCards.progress.description}
+        />
       </section>
 
       <section aria-labelledby="workflows-heading" className="space-y-5">
         <div className="space-y-2">
           <h2 id="workflows-heading" className="text-xl font-semibold tracking-tight text-slate-900">
-            Workflow principali
+            {it.home.workflowsHeading}
           </h2>
-          <p className="text-sm text-slate-600">Tre percorsi operativi con layout guidato e UX mobile-first.</p>
+          <p className="text-sm text-slate-600">{it.home.workflowsIntro}</p>
         </div>
         <WorkflowGrid />
       </section>
     </main>
   );
 }
-

@@ -10,49 +10,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { it } from "@/lib/i18n/it";
 
-type Workflow = {
-  title: string;
-  description: string;
-  badge: string;
-  href: string;
-  accent: string;
-};
+const ACCENTS = [
+  "from-violet-500/15 to-fuchsia-500/10",
+  "from-sky-500/15 to-indigo-500/10",
+  "from-amber-500/15 to-orange-500/10",
+] as const;
 
-const workflows: Workflow[] = [
-  {
-    title: "New Listing",
-    description:
-      "Crea una nuova scheda prodotto da input strutturati e parole chiave manuali o CSV Helium10.",
-    badge: "Generation",
-    href: "/new-listing",
-    accent: "from-violet-500/15 to-fuchsia-500/10",
-  },
-  {
-    title: "Improve Existing Listing",
-    description:
-      "Incolla un URL Amazon e ottieni suggerimenti guidati per migliorare titolo, bullet e backend terms.",
-    badge: "Optimization",
-    href: "/improve",
-    accent: "from-sky-500/15 to-indigo-500/10",
-  },
-  {
-    title: "Build From Competitor",
-    description:
-      "Parti da una pagina concorrente per creare un listing differenziato con positioning più chiaro.",
-    badge: "Competitor",
-    href: "/competitor",
-    accent: "from-amber-500/15 to-orange-500/10",
-  },
-];
+const HREFS = ["/new-listing", "/improve", "/competitor"] as const;
 
 export function WorkflowGrid() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      {workflows.map((w) => (
-        <Card key={w.href} className="group relative overflow-hidden border-slate-200/70">
+      {it.workflows.cards.map((w, i) => (
+        <Card key={HREFS[i]} className="group relative overflow-hidden border-slate-200/70">
           <div
-            className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${w.accent} opacity-80 transition group-hover:opacity-100`}
+            className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${ACCENTS[i]} opacity-80 transition group-hover:opacity-100`}
             aria-hidden
           />
           <CardHeader className="relative">
@@ -63,12 +37,12 @@ export function WorkflowGrid() {
             <CardDescription className="relative text-slate-600">{w.description}</CardDescription>
           </CardHeader>
           <CardContent className="relative">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Prossimo step</p>
-            <p className="mt-1 text-sm text-slate-700">Flusso guidato in 3 sezioni con campi e upload dove necessario.</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{it.common.nextStep}</p>
+            <p className="mt-1 text-sm text-slate-700">{w.nextHint}</p>
           </CardContent>
           <CardFooter className="relative">
             <Button asChild variant="secondary" className="w-full sm:w-auto">
-              <Link href={w.href}>Apri workflow</Link>
+              <Link href={HREFS[i]}>{it.common.openWorkflow}</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -76,4 +50,3 @@ export function WorkflowGrid() {
     </div>
   );
 }
-

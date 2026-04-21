@@ -1,0 +1,339 @@
+/**
+ * Testi interfaccia in italiano (MVP centralizzato).
+ * Nomi variabili e chiavi restano in inglese dove serve al codice.
+ */
+
+export const it = {
+  brand: {
+    short: "ALE",
+    name: "Amazon Listing Engine",
+    tagline: "Motore per inserzioni Amazon",
+  },
+  nav: {
+    home: "Home",
+    newListing: "Nuova inserzione",
+    improve: "Migliora inserzione",
+    competitor: "Da concorrente",
+    cta: "Inizia qui",
+  },
+  common: {
+    required: "Obbligatorio",
+    optional: "Facoltativo",
+    examplePrefix: "Esempio:",
+    nextStep: "Cosa succede dopo",
+    openWorkflow: "Apri percorso",
+    saveDraft: "Salva bozza",
+    continue: "Continua",
+    cancel: "Annulla",
+    startAudit: "Avvia analisi",
+    generateProposal: "Genera proposta",
+  },
+  home: {
+    kicker: "Amazon Listing Engine",
+    heroTitle:
+      "Crea, migliora e differenzia le tue schede prodotto su Amazon, con percorsi semplici e guidati.",
+    heroBody:
+      "Ti accompagniamo passo passo: raccogliamo le informazioni giuste, le organizziamo e ti aiutiamo a ottenere inserzioni più chiare e competitive, senza passaggi tecnici complessi.",
+    statusCardTitle: "Stato del servizio",
+    statusConnected: "Servizio attivo",
+    statusDisconnected: "Momentaneamente non disponibile",
+    statusLimited: "Servizio limitato",
+    statusDetailWhenUpPrefix: "Tutto ok: puoi usare le funzioni che dipendono dal server.",
+    statusDetailWhenDown:
+      "Il servizio non risponde. Controlla che l’applicazione sia avviata oppure riprova tra qualche minuto.",
+    statusDetailHintTechnical:
+      "Se gestisci tu il sistema, controlla che il servizio sia avviato e che l’indirizzo di collegamento sia corretto nelle impostazioni.",
+    statusTechnicalToggle: "Dettagli per tecnici",
+    workflowsHeading: "Scegli cosa vuoi fare",
+    workflowsIntro:
+      "Tre percorsi pensati per chi usa Amazon ogni giorno ma non vuole perdere tempo in strumenti complicati.",
+    scoreCards: {
+      quality: {
+        title: "Qualità inserzione",
+        delta: "+6",
+        description:
+          "Stima di quanto la scheda può migliorare dopo revisione testi e parole chiave (valore dimostrativo).",
+      },
+      keywords: {
+        title: "Copertura parole chiave",
+        delta: "+12",
+        description:
+          "Quanto il listing copre le ricerche utili: qui mancano ancora alcune ricerche a intenzione alta.",
+      },
+      compliance: {
+        title: "Conformità",
+        delta: "stabile",
+        description: "Allineamento ai vincoli tipici delle regole Amazon (titolo, claims, termini sensibili).",
+      },
+      progress: {
+        title: "Avanzamento piattaforma",
+        description:
+          "Stiamo collegando analisi automatiche e suggerimenti: alcune schermate mostrano ancora esempi dimostrativi.",
+      },
+    },
+  },
+  workflows: {
+    cards: [
+      {
+        title: "Nuova inserzione",
+        description:
+          "Parti dai dati del prodotto e dalle parole chiave (anche da file Helium10) per generare una scheda ordinata e pronta da rifinire.",
+        badge: "Creazione",
+        nextHint:
+          "Compila i campi con calma: più dettagli inserisci, più i suggerimenti saranno mirati. Puoi salvare e tornare dopo.",
+      },
+      {
+        title: "Migliora un’inserzione esistente",
+        description:
+          "Incolla il link della tua scheda Amazon: ti aiutiamo a capire cosa ottimizzare nel titolo, nei punti elenco e nel testo.",
+        badge: "Ottimizzazione",
+        nextHint:
+          "Ti chiederemo l’indirizzo della pagina e cosa vuoi migliorare per primo. Un passaggio alla volta.",
+      },
+      {
+        title: "Nuova scheda da concorrente",
+        description:
+          "Usa la pagina di un concorrente come spunto: costruisci una proposta diversa, con il tuo posizionamento.",
+        badge: "Confronto",
+        nextHint:
+          "Servono il link del concorrente e poche righe su come vuoi distinguerti: ti guidiamo con domande semplici.",
+      },
+    ],
+  },
+  newListing: {
+    title: "Nuova inserzione",
+    subtitle:
+      "Raccogliamo le informazioni sul prodotto e sulle parole chiave. Non serve essere esperti: segui i passaggi e usa gli aiuti “?” accanto ai campi.",
+    steps: {
+      product: {
+        title: "Dettagli del prodotto",
+        description: "Qui descriviamo cosa vendi, così titolo e testi rispecchiano davvero il prodotto.",
+        intro:
+          "In questo passaggio servono nome, categoria e punti di forza. Non serve testo perfetto: puoi incollare appunti o bullet del fornitore.",
+        sectionHelp: {
+          title: "Perché questi dati",
+          body: "Nome e categoria aiutano a inquadrare il prodotto. I punti di forza diventano spesso i bullet nella scheda: più sono concreti (materiali, misure, benefici), meglio è.",
+        },
+        fields: {
+          name: {
+            label: "Nome o titolo provvisorio del prodotto",
+            hint: "Scrivi come lo chiameresti a voce. Evita abbreviazioni misteriose.",
+            example: "Organizer da scrivania per cavi, in alluminio",
+            help: {
+              title: "Cosa inserire",
+              body: "Il nome che vedi sulla confezione o sul listino va bene. Serve solo a capire di che prodotto si tratta prima di costruire il titolo Amazon ufficiale.",
+            },
+          },
+          category: {
+            label: "Categoria su Amazon (se la conosci)",
+            hint: "Facoltativo ma utile: es. Casa e cucina, Elettronica.",
+            example: "Casa e cucina › Organizzazione interni",
+            optional: true,
+            help: {
+              title: "Perché la categoria",
+              body: "Amazon organizza i prodotti per categorie. Se non sei sicuro, lascia un’ipotesi o salta: potrai correggere dopo.",
+            },
+          },
+          benefits: {
+            label: "Punti di forza e benefici",
+            hint: "Elenco puntato va bene: misure, materiali, per chi è pensato, cosa risolve.",
+            example: "Alluminio leggero; ingombro ridotto; adatto a monitor fino a 27 pollici",
+            help: {
+              title: "Come scriverli bene",
+              body: "Pensa a cosa chiederebbe un cliente dubbioso. Evita superlativi vuoti: preferisci dettagli verificabili (peso, compatibilità, certificazioni).",
+            },
+          },
+        },
+      },
+      keywords: {
+        title: "Parole chiave di ricerca",
+        tabsAriaLabel: "Modalità per le parole chiave",
+        description: "Qui raccogliamo le ricerche per cui vuoi essere trovato, a mano o da file.",
+        intro:
+          "Puoi digitare le parole a mano oppure preparare un file dalla ricerca Helium10. Scegli la modalità che ti è più comoda: il passo dopo serve solo se usi il file.",
+        sectionHelp: {
+          title: "Parole chiave spiegate semplice",
+          body: "Sono le frasi che i clienti digitano su Amazon. Non devono ripetere tutto il titolo: servono varianti (sinonimi, usi, misure) che aiutano la scheda a comparire nelle ricerche giuste.",
+        },
+        tabs: {
+          manual: "Scrivo le parole a mano",
+          csv: "Ho un file da Helium10",
+        },
+        manual: {
+          label: "Elenco parole chiave",
+          hint: "Separate da virgola o da riga. Non serve ordine perfetto.",
+          placeholder:
+            "es. organizer cavi scrivania, gestione cavi ufficio, clip cavi scrivania legno",
+          help: {
+            title: "Cosa scrivere",
+            body: "Inserisci le ricerche che ti sembrano pertinenti, anche in forma semplice. Più tardi potremo raggrupparle (principali, secondarie, da escludere).",
+          },
+        },
+        csvBlurb:
+          "Se usi Helium10, esporta un file CSV con le tue ricerche. Nel passaggio successivo lo carichi qui: niente operazioni tecniche sul file.",
+      },
+      upload: {
+        title: "Carica il file CSV (Helium10)",
+        description: "Trascina il file o sceglilo dal computer: accettiamo solo CSV per sicurezza e chiarezza.",
+        intro:
+          "Serve solo se hai scelto la modalità file. Se hai scritto le parole a mano, puoi comunque caricare un file extra oppure saltare e andare avanti.",
+        sectionHelp: {
+          title: "File Helium10",
+          body: "Helium10 è uno strumento che esporta elenchi di ricerche. Il file che scarichi di solito è in formato CSV: è un foglio semplice apribile anche con Excel.",
+        },
+      },
+    },
+    dropzone: {
+      title: "Trascina qui il file CSV",
+      description: "Puoi anche cliccare per scegliere il file dal computer.",
+      empty: "Nessun file ancora. Quando sei pronto, carica un CSV esportato da Helium10 (o un elenco salvato come CSV).",
+      selectedHeading: "File selezionato",
+      hintLine:
+        "Formato supportato: .csv. Se il file è molto grande, potrebbe servire un attimo in più in futuro quando collegheremo l’elaborazione.",
+    },
+  },
+  improve: {
+    title: "Migliora un’inserzione esistente",
+    subtitle:
+      "Incolla il link della tua scheda Amazon e dicci cosa vuoi migliorare. Analizziamo una pagina alla volta, in modo controllato.",
+    steps: {
+      url: {
+        title: "Link della scheda Amazon",
+        description: "Usa l’indirizzo completo della pagina prodotto che vuoi migliorare.",
+        intro:
+          "Apri la scheda su Amazon, copia l’indirizzo dalla barra del browser e incollalo qui. Verifica che sia proprio il prodotto giusto.",
+        sectionHelp: {
+          title: "Perché solo un link",
+          body: "Così ci concentriamo su una scheda alla volta, evitiamo raccolte massive di pagine e rispettiamo le regole d’uso di Amazon.",
+        },
+        field: {
+          label: "Indirizzo (URL) della pagina prodotto",
+          hint: "Deve iniziare con https:// e contenere di solito /dp/ seguito dal codice articolo.",
+          help: {
+            title: "Dove trovarlo",
+            body: "Sul sito Amazon apri il tuo prodotto. L’URL in alto è quello giusto. Se hai dubbi, incolla quello che vedi dopo aver cliccato sul titolo in elenco risultati.",
+          },
+        },
+      },
+      scope: {
+        title: "Su cosa concentrarci",
+        tabsAriaLabel: "Area di lavoro per il miglioramento",
+        description: "Scegli se vuoi partire dal testo visibile ai clienti o dalle parole chiave.",
+        intro:
+          "Puoi cambiare tab in qualsiasi momento. Più indicazioni ci dai, più i suggerimenti saranno aderenti al tuo obiettivo.",
+        sectionHelp: {
+          title: "Copy e parole chiave",
+          body: "Copy è ciò che legge il cliente (titolo, punti elenco, descrizione). Parole chiave sono le ricerche con cui vuoi essere trovato: servono a collegare scheda e domanda dei clienti.",
+        },
+        tabs: {
+          copy: "Testo della scheda (copy)",
+          keywords: "Parole chiave",
+        },
+        copyField: {
+          label: "Cosa vuoi migliorare nel testo?",
+          hint: "Esempi: titolo poco chiaro, bullet troppo lunghi, tono troppo tecnico.",
+          placeholder:
+            "Es. voglio un titolo più corto e che spieghi subito il beneficio principale; i bullet sono ripetitivi…",
+          help: {
+            title: "Come compilare",
+            body: "Scrivi in modo libero: cosa non ti convince, cosa vorresti che capisse il cliente a colpo d’occhio, se hai vincoli di marca o legali da rispettare.",
+          },
+        },
+        kwField: {
+          label: "Parole chiave da privilegiare o evitare",
+          hint: "Elenco separato da virgole: ok anche note tipo “da evitare: …”.",
+          placeholder:
+            "es. organizer cavi scrivania, gestione cavi ufficio — da evitare: regalo, omaggio",
+          help: {
+            title: "Primary, secondarie, esclusi",
+            body: "Indica le ricerche importanti e, se serve, quelle fuori target (es. regalo se non vendi idea regalo). Più tardi potremo organizzarle in modo strutturato.",
+          },
+        },
+      },
+      result: {
+        title: "Risultato dell’analisi",
+        description: "Qui vedrai il riepilogo e i suggerimenti quando il motore di analisi sarà collegato.",
+        intro:
+          "Per ora quest’area è vuota di proposito: ti mostra dove appariranno punteggi, idee di miglioramento e priorità. Nessun errore da parte tua.",
+        emptyTitle: "Analisi non ancora disponibile",
+        emptyBody:
+          "Quando il servizio di analisi sarà attivo, qui troverai un riepilogo chiaro: cosa va bene, cosa correggere prima e cosa puoi fare dopo. Intanto puoi completare i passaggi sopra e salvare la bozza.",
+      },
+    },
+  },
+  competitor: {
+    title: "Nuova scheda ispirata a un concorrente",
+    subtitle:
+      "Usa la pagina di un altro venditore solo come riferimento: costruiremo una proposta con il tuo posizionamento, non una copia.",
+    steps: {
+      url: {
+        title: "Pagina del concorrente",
+        description: "Incolla un solo link alla scheda che vuoi prendere come riferimento.",
+        intro:
+          "Serve l’indirizzo completo della scheda concorrente. Non serve che sia lo stesso identico prodotto: può essere un alternativo molto simile.",
+        sectionHelp: {
+          title: "Uso lecito del confronto",
+          body: "Analizziamo una pagina pubblica alla volta per capire messaggi e struttura, non per copiare testi. Il tuo obiettivo è differenziarti: lo chiederemo al passo successivo.",
+        },
+        field: {
+          label: "Indirizzo (URL) della scheda concorrente",
+          hint: "Stesso formato del link Amazon che usi per migliorare la tua scheda.",
+          help: {
+            title: "Quale link usare",
+            body: "Apri la scheda del concorrente su Amazon e copia l’URL dalla barra degli indirizzi. Verifica di essere sul prodotto giusto prima di incollare.",
+          },
+        },
+      },
+      positioning: {
+        title: "Come ti vuoi posizionare",
+        description: "Spiega chi è il tuo cliente ideale e perché dovrebbe scegliere te.",
+        intro:
+          "Queste informazioni servono a generare testi distintivi. Non servono formule marketing: bastano frasi sincere sul tuo vantaggio.",
+        sectionHelp: {
+          title: "Differenziarsi in pratica",
+          body: "Più sei specifico su pubblico e vantaggio (qualità, servizio, garanzia, design), più il testo potrà essere credibile e aderente al tuo brand.",
+        },
+        audience: {
+          label: "Cliente ideale",
+          hint: "Chi comperebbe da te e non dal concorrente? Età, contesto, problema che risolve.",
+          example: "Professionisti che lavorano da casa e vogliono una postazione ordinata",
+          help: {
+            title: "Cosa scrivere",
+            body: "Pensa a una persona tipo: non serve un segmento perfetto, ma un’idea chiara di chi vuoi convincere.",
+          },
+        },
+        advantage: {
+          label: "Il tuo vantaggio principale",
+          hint: "Una o due frasi: cosa offri di concreto in più (o diverso).",
+          example: "Materiali certificati, imballo più robusto, assistenza in italiano entro 24 ore",
+          help: {
+            title: "Perché è importante",
+            body: "Il confronto con il concorrente serve a evidenziare il tuo plus. Evita slogan generici: preferisci fatti verificabili.",
+          },
+        },
+        narrative: {
+          label: "Messaggio o tono desiderato",
+          hint: "Facoltativo ma utile: tono formale/cordiale, enfasi su design, sostenibilità, ecc.",
+          placeholder:
+            "Es. voglio risultare affidabile e tecnico, meno ‘marketing’ del concorrente; enfatizzare garanzia 3 anni…",
+          optional: true,
+          help: {
+            title: "Angolo narrativo",
+            body: "Qui indichi come vuoi sembrare agli occhi del cliente: serio, friendly, premium, ecc. Aiuta a mantenere coerenza tra titolo e punti elenco.",
+          },
+        },
+      },
+      result: {
+        title: "Anteprima della nuova scheda",
+        description: "Qui comparirà la proposta di testi quando la generazione sarà attiva.",
+        intro:
+          "Non vedere ancora contenuti è normale: stiamo preparando il flusso. Completa i dati sopra così non dovrai ripetere il lavoro.",
+        emptyTitle: "Proposta non ancora pronta",
+        emptyBody:
+          "Quando il motore di generazione sarà collegato, qui troverai titolo, punti elenco, testi di supporto e note su parole chiave e conformità. Puoi salvare la bozza e tornare più tardi.",
+      },
+    },
+  },
+} as const;
+
+export type ItCopy = typeof it;
