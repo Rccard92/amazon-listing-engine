@@ -1,0 +1,47 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  background-image:
+    radial-gradient(1200px 640px at 10% -12%, rgb(224 231 255 / 0.55), transparent 60%),
+    radial-gradient(900px 520px at 92% 0%, rgb(253 230 138 / 0.34), transparent 54%),
+    radial-gradient(840px 440px at 52% 102%, rgb(186 230 253 / 0.3), transparent 55%);
+}
+
+* {
+  @apply border-slate-200;
+}
+
+::selection {
+  @apply bg-slate-900 text-white;
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-3xl border border-slate-200/75 bg-white/90 shadow-card backdrop-blur;
+  }
+
+  .page-section {
+    @apply space-y-4 rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-soft sm:p-8;
+  }
+
+  .field-label {
+    @apply text-sm font-medium text-slate-700;
+  }
+
+  .field-hint {
+    @apply text-xs text-slate-500;
+  }
+}
+
