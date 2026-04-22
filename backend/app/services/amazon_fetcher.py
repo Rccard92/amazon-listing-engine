@@ -83,7 +83,7 @@ class AmazonFetcher:
             except AmazonFetchChallengeError:
                 raise
             except httpx.TimeoutException as exc:
-                last_exc = AmazonFetchTimeoutError("Timeout durante il fetch della pagina Amazon.") from exc
+                last_exc = AmazonFetchTimeoutError("Timeout durante il fetch della pagina Amazon.")
                 if attempt < self.settings.amazon_fetch_max_retries:
                     time.sleep(self.settings.amazon_fetch_min_delay_ms / 1000)
                 else:
