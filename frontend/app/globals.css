@@ -4,6 +4,9 @@
 
 :root {
   color-scheme: light;
+  /* Stack di sistema: evita download da Google Fonts in fase di build (utile su CI/Railway). */
+  --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
 html,

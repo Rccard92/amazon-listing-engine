@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createWorkItem,
@@ -25,6 +25,8 @@ export function useWorkItemDraft({
   basePath = "/new-listing",
 }: UseWorkItemDraftOptions) {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const searchParams = useSearchParams();
   const idFromUrl = searchParams.get("workItemId");
 
@@ -56,7 +58,7 @@ export function useWorkItemDraft({
       const id = created?.id ?? null;
       if (id) {
         setCreatedId(id);
-        router.replace(`${basePath}?workItemId=${encodeURIComponent(id)}`);
+        routerRef.current.replace(`${basePath}?workItemId=${encodeURIComponent(id)}`);
       }
       setLoading(false);
     })();
@@ -64,7 +66,7 @@ export function useWorkItemDraft({
     return () => {
       cancelled = true;
     };
-  }, [idFromUrl, createdId, fallbackTitle, workflowType, router, basePath]);
+  }, [idFromUrl, createdId, fallbackTitle, workflowType, basePath]);
 
   const save = useCallback(
     async ({
