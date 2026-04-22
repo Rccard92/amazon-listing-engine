@@ -1,11 +1,16 @@
-"""Costruisce ConfirmedProductStrategy da bozza AI e dati work item (competitor workflow)."""
+"""Costruisce ConfirmedProductStrategy da input manuale, bozza AI o workflow competitor legacy."""
 
 from __future__ import annotations
 
 import re
 
+from pydantic import ValidationError
+
 from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy, PriceTier
 from app.schemas.product_ai_analysis import ProductStrategyDraft
+
+# Chiave in `WorkItem.input_data` per strategia strutturata salvata dal form manuale (MVP manuale-first).
+MANUAL_PRODUCT_STRATEGY_KEY = "manual_product_strategy"
 
 
 def _split_lines(value: str | None) -> list[str]:
@@ -108,8 +113,23 @@ def confirmed_from_draft_and_user(
     )
 
 
+def confirmed_strategy_from_manual_dict(raw: object) -> ConfirmedProductStrategy | None:
+    """Se `raw` è un dict valido per ConfirmedProductStrategy, lo restituisce; altrimenti None."""
+    if not isinstance(raw, dict):
+        return None
+    try:
+        return ConfirmedProductStrategy.model_validate(raw)
+    except ValidationError:
+        return None
+
+
 def confirmed_strategy_from_work_item_input(input_data: dict) -> ConfirmedProductStrategy:
-    """Estrae dalla struttura `input_data` salvata nel work item competitor."""
+    """Best-effort: prima `manual_product_strategy`, altrimenti competitor/draft legacy."""
+    manual = input_data.get(MANUAL_PRODUCT_STRATEGY_KEY)
+    parsed_manual = confirmed_strategy_from_manual_dict(manual)
+    if parsed_manual is not None:
+        return parsed_manual
+
     draft_raw = input_data.get("ai_strategy_draft")
     draft: ProductStrategyDraft | None = None
     if isinstance(draft_raw, dict):

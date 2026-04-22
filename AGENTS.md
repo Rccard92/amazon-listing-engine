@@ -3,13 +3,22 @@
 ## Project
 This repository contains an AI-assisted Amazon listing optimization platform.
 
-Primary goal:
-Build a production-ready web application that helps create and improve Amazon product listings.
+### MVP direction (manual-first, 2026)
+Primary flow for the current MVP:
+1. **Manual structured product input** (work item / form: product facts, benefits, keywords).
+2. **Strategic enrichment** (optional LLM pass on structured data — not on scraped pages as the first step).
+3. **AI generation of final Amazon outputs** (distinct pipelines: SEO title, bullets, description, backend keywords) via the listing generation orchestrator.
 
-Core use cases:
-1. Generate a new Amazon listing from structured product inputs.
-2. Improve an existing Amazon product listing starting from an Amazon product URL.
-3. Build a new listing starting from a competitor Amazon product page.
+Legacy flows that **ingest or analyze Amazon product URLs** (fetch, parse, competitor prefill) remain in the codebase for optional reuse but are **disabled by default**:
+- Backend: set `ENABLE_URL_INGESTION=true` to mount routers that expose `POST /api/v1/amazon/analyze` and `POST /api/v1/workflows/create-from-similar`. When disabled, those paths are **not registered** (clients see **404**, not a dedicated “disabled” JSON error).
+- Frontend: `/competitor` and `/improve` **redirect to `/new-listing`** (MVP manuale-first); there is no separate UI flag for URL workflows in the current MVP shell.
+
+Persisted manual strategy for generation lives under work item `input_data.manual_product_strategy` (see backend `MANUAL_PRODUCT_STRATEGY_KEY`).
+
+### Historical use cases (still valid as product vision, not all MVP-primary)
+1. Generate a new Amazon listing from structured product inputs. **(MVP primary)**
+2. Improve an existing Amazon product listing starting from an Amazon product URL. **(Phase 2 / optional ingestion)**
+3. Build a new listing starting from a competitor Amazon product page. **(Phase 2 / optional ingestion)**
 4. Accept keywords both manually and via Helium10 CSV import.
 
 ## Current architecture goals
@@ -34,7 +43,8 @@ Core use cases:
 - Prefer deterministic business rules where possible.
 - Keep LLM usage isolated in dedicated services.
 
-## Amazon URL analysis constraints
+## Amazon URL analysis (optional / phase 2)
+When `ENABLE_URL_INGESTION` is enabled, the following constraints apply (unchanged engineering intent):
 - Only analyze a single user-provided Amazon URL at a time.
 - Do not build mass crawling features.
 - Use conservative rate limits.
@@ -59,8 +69,9 @@ The application must normalize keywords into:
 - backend-only keywords
 - excluded/irrelevant keywords
 
-## Required modules
-Design code so these domains are clearly separated:
+## Required modules (domain map)
+Design code so these domains are clearly separated. **MVP-critical today:** keyword handling, listing generation orchestrator, work items/projects, validation of generated sections. **Optional until URL ingestion is re-enabled:** amazon_url_service, amazon_fetcher, amazon_parser_*, amazon_normalizer, page ingestion, workflow create-from-similar.
+
 - amazon_url_service
 - amazon_fetcher
 - amazon_parser_structured
@@ -70,7 +81,7 @@ Design code so these domains are clearly separated:
 - keyword_service
 - listing_audit_service
 - competitor_analysis_service
-- listing_generation_service
+- listing_generation_service (implemented as `listing_generation` package + API)
 - listing_scoring_service
 - compliance_service
 

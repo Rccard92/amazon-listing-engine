@@ -1,12 +1,12 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import create_app
 from app.schemas.amazon_analysis import AmazonAnalyzeResponse, AmazonProductNormalized
 from app.services.amazon_analysis_service import AmazonAnalysisService
 from app.api.routes import amazon_analysis
 
 
-def test_post_amazon_analyze_success(monkeypatch) -> None:
+def test_post_amazon_analyze_success(monkeypatch, enable_url_ingestion) -> None:
     class FakeService(AmazonAnalysisService):
         def analyze(self, *, url: str) -> AmazonAnalyzeResponse:
             return AmazonAnalyzeResponse(
@@ -29,7 +29,7 @@ def test_post_amazon_analyze_success(monkeypatch) -> None:
             )
 
     monkeypatch.setattr(amazon_analysis, "service", FakeService())
-    client = TestClient(app)
+    client = TestClient(create_app())
     response = client.post("/api/v1/amazon/analyze", json={"url": "https://amazon.it/dp/B08N5WRWNW"})
     assert response.status_code == 200
     body = response.json()

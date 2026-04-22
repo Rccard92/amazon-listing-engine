@@ -11,13 +11,11 @@ export const it = {
   },
   nav: {
     home: "Home",
-    newListing: "Crea da zero (avanzato)",
-    improve: "Migliora scheda esistente",
-    competitor: "Crea da prodotto simile",
+    newListing: "Nuova scheda manuale",
     listingGeneration: "Generazione scheda",
     history: "Cronologia",
     projects: "Progetti salvati",
-    cta: "Crea da prodotto simile",
+    cta: "Nuova scheda manuale",
   },
   common: {
     required: "Obbligatorio",
@@ -43,25 +41,25 @@ export const it = {
   home: {
     kicker: "Amazon Listing Engine",
     heroTitle:
-      "Crea nuove schede prodotto Amazon partendo da un prodotto simile, con un percorso guidato e adatto anche ai non esperti.",
+      "Crea schede prodotto Amazon con input strutturato, strategia chiara e generazione guidata del copy.",
     heroBody:
-      "Parti da una pagina Amazon simile per ridurre il rischio di pagina bianca: il sistema precompila i dati utili e ti guida solo sulle decisioni davvero strategiche per il tuo brand.",
+      "Il percorso principale è manuale: inserisci prodotto e keyword, poi generi titolo, bullet, descrizione e search terms con obiettivi distinti. Eventuali flussi da URL Amazon restano solo lato backend opzionale in fasi successive.",
     workflowsHeading: "Cosa vuoi fare adesso?",
     workflowsIntro:
-      "Scegli uno dei percorsi guidati: il primo e consigliato parte da un prodotto simile e ti aiuta a costruire una scheda piu' solida con meno attrito.",
+      "Il flusso consigliato parte da dati manuali e dalla generazione per sezioni. I vecchi percorsi da URL Amazon reindirizzano alla nuova scheda manuale.",
     benefitsHeading: "Perché usare questa piattaforma",
     benefitsIntro:
       "Ti aiutiamo a lavorare sulle schede prodotto in modo più ordinato, con meno dubbi e decisioni più rapide.",
     benefits: [
       {
-        title: "Percorso guidato per i testi",
+        title: "Input strutturato prima del copy",
         description:
-          "Compili pochi campi alla volta con esempi e spiegazioni, così è più facile ottenere una scheda prodotto chiara.",
+          "Raccogli nome, benefici e parole chiave in modo ordinato: è la base per titolo, bullet e descrizione coerenti.",
       },
       {
-        title: "Analisi mirata di una pagina Amazon",
+        title: "Generazione per sezioni (non un prompt unico)",
         description:
-          "Parti da un link specifico per capire cosa migliorare senza confusione e senza attività massive.",
+          "Titolo SEO, punti elenco, descrizione e keyword backend hanno regole e obiettivi separati, come in un vero listing engine.",
       },
       {
         title: "Keyword manuali o file Helium10",
@@ -73,57 +71,26 @@ export const it = {
   workflows: {
     cards: [
       {
-        href: "/competitor",
-        title: "Crea da prodotto simile",
-        description:
-          "Incolla un prodotto Amazon simile: estraiamo i segnali utili, precompiliamo una bozza e ti guidiamo sulle differenze che contano.",
-        badge: "Consigliato",
-        nextHint:
-          "Parti da un URL, rivedi i campi precompilati e conferma le scelte prima della generazione finale.",
-        cta: "Inizia da prodotto simile",
-      },
-      {
-        href: "/improve",
-        title: "Migliora scheda prodotto esistente",
-        description:
-          "Incolla il link della tua scheda Amazon e individua in modo guidato cosa migliorare in titolo, punti elenco e contenuti.",
-        badge: "Miglioramento",
-        nextHint:
-          "Ti chiediamo solo il link e il tuo obiettivo principale: da lì parti subito con suggerimenti utili.",
-        cta: "Migliora scheda",
-      },
-      {
         href: "/new-listing",
-        title: "Crea da zero (avanzato)",
+        title: "Nuova scheda da dati manuali",
         description:
-          "Compila manualmente tutti i dati del prodotto. Percorso utile se hai gia' strategia, dati e keyword molto chiari.",
-        badge: "Avanzato",
+          "Percorso principale del MVP: inserisci prodotto, benefici e parole chiave. Salva la bozza e passa alla generazione del copy.",
+        badge: "Percorso principale",
         nextHint:
-          "Percorso completo ma meno assistito: consigliato solo se non hai un prodotto simile da cui partire.",
-        cta: "Apri creazione manuale",
+          "Dopo il salvataggio puoi aprire la pagina Generazione scheda per titolo SEO, bullet, descrizione e keyword backend.",
+        cta: "Inizia da input manuale",
+      },
+      {
+        href: "/listing-generazione",
+        title: "Generazione scheda (copy Amazon)",
+        description:
+          "Quattro sezioni distinte con regole dedicate: titolo, punti elenco, descrizione e search terms. Collega una bozza da Cronologia oppure compila la strategia qui.",
+        badge: "Output",
+        nextHint:
+          "Con un work item salvato, aggiungi ?workItemId= nella URL oppure compila la strategia a mano nella stessa pagina.",
+        cta: "Apri generazione",
       },
     ],
-  },
-  createFromSimilar: {
-    title: "Crea una nuova scheda da prodotto simile",
-    subtitle:
-      "Incolla un prodotto Amazon simile: analizziamo la pagina, precompiliamo una bozza strategica e ti chiediamo solo le scelte specifiche del tuo brand.",
-    actions: {
-      analyze: "Analizza e precompila",
-      regenerate: "Rianalizza URL",
-      continue: "Continua con bozza guidata",
-    },
-    hints: {
-      partialExtraction:
-        "Estrazione parziale: alcuni dati dalla pagina potrebbero mancare. Verifica i campi e prosegui con cautela.",
-      aiSoftFailure:
-        "L'analisi AI strutturata non è andata a buon fine; abbiamo comunque salvato l'estrazione dalla pagina e i suggerimenti di base.",
-      dismissWarning: "Ho capito, continuo",
-    },
-    errors: {
-      generic: "Non sono riuscito a completare l'analisi. Controlla l'URL e riprova.",
-      unknownServer: "Il server ha restituito un errore non strutturato. Riprova tra poco.",
-    },
   },
   /** Fallback IT allineati alla tassonomia backend (`error_code`). Il messaggio del server ha priorità se diverso. */
   workflowErrors: {
@@ -238,148 +205,6 @@ export const it = {
         "Formato supportato: .csv. Se il file è molto grande, potrebbe servire un attimo in più in futuro quando collegheremo l’elaborazione.",
     },
   },
-  improve: {
-    title: "Migliora un’inserzione esistente",
-    subtitle:
-      "Incolla il link della tua scheda Amazon e dicci cosa vuoi migliorare. Analizziamo una pagina alla volta, in modo controllato.",
-    steps: {
-      url: {
-        title: "Link della scheda Amazon",
-        description: "Usa l’indirizzo completo della pagina prodotto che vuoi migliorare.",
-        intro:
-          "Apri la scheda su Amazon, copia l’indirizzo dalla barra del browser e incollalo qui. Verifica che sia proprio il prodotto giusto.",
-        sectionHelp: {
-          title: "Perché solo un link",
-          body: "Così ci concentriamo su una scheda alla volta, evitiamo raccolte massive di pagine e rispettiamo le regole d’uso di Amazon.",
-        },
-        field: {
-          label: "Indirizzo (URL) della pagina prodotto",
-          hint: "Deve iniziare con https:// e contenere di solito /dp/ seguito dal codice articolo.",
-          help: {
-            title: "Dove trovarlo",
-            body: "Sul sito Amazon apri il tuo prodotto. L’URL in alto è quello giusto. Se hai dubbi, incolla quello che vedi dopo aver cliccato sul titolo in elenco risultati.",
-          },
-        },
-      },
-      scope: {
-        title: "Su cosa concentrarci",
-        tabsAriaLabel: "Area di lavoro per il miglioramento",
-        description: "Scegli se vuoi partire dal testo visibile ai clienti o dalle parole chiave.",
-        intro:
-          "Puoi cambiare tab in qualsiasi momento. Più indicazioni ci dai, più i suggerimenti saranno aderenti al tuo obiettivo.",
-        sectionHelp: {
-          title: "Copy e parole chiave",
-          body: "Copy è ciò che legge il cliente (titolo, punti elenco, descrizione). Parole chiave sono le ricerche con cui vuoi essere trovato: servono a collegare scheda e domanda dei clienti.",
-        },
-        tabs: {
-          copy: "Testo della scheda (copy)",
-          keywords: "Parole chiave",
-        },
-        copyField: {
-          label: "Cosa vuoi migliorare nel testo?",
-          hint: "Esempi: titolo poco chiaro, bullet troppo lunghi, tono troppo tecnico.",
-          placeholder:
-            "Es. voglio un titolo più corto e che spieghi subito il beneficio principale; i bullet sono ripetitivi…",
-          help: {
-            title: "Come compilare",
-            body: "Scrivi in modo libero: cosa non ti convince, cosa vorresti che capisse il cliente a colpo d’occhio, se hai vincoli di marca o legali da rispettare.",
-          },
-        },
-        kwField: {
-          label: "Parole chiave da privilegiare o evitare",
-          hint: "Elenco separato da virgole: ok anche note tipo “da evitare: …”.",
-          placeholder:
-            "es. organizer cavi scrivania, gestione cavi ufficio — da evitare: regalo, omaggio",
-          help: {
-            title: "Primary, secondarie, esclusi",
-            body: "Indica le ricerche importanti e, se serve, quelle fuori target (es. regalo se non vendi idea regalo). Più tardi potremo organizzarle in modo strutturato.",
-          },
-        },
-      },
-      result: {
-        title: "Risultato dell’analisi",
-        description: "Qui vedrai il riepilogo e i suggerimenti quando il motore di analisi sarà collegato.",
-        intro:
-          "Per ora quest’area è vuota di proposito: ti mostra dove appariranno punteggi, idee di miglioramento e priorità. Nessun errore da parte tua.",
-        emptyTitle: "Analisi non ancora disponibile",
-        emptyBody:
-          "Quando il servizio di analisi sarà attivo, qui troverai un riepilogo chiaro: cosa va bene, cosa correggere prima e cosa puoi fare dopo. Intanto puoi completare i passaggi sopra e salvare la bozza.",
-      },
-    },
-  },
-  competitor: {
-    title: "Nuova scheda ispirata a un concorrente",
-    subtitle:
-      "Usa la pagina di un altro venditore solo come riferimento: costruiremo una proposta con il tuo posizionamento, non una copia.",
-    steps: {
-      url: {
-        title: "Pagina del concorrente",
-        description: "Incolla un solo link alla scheda che vuoi prendere come riferimento.",
-        intro:
-          "Serve l’indirizzo completo della scheda concorrente. Non serve che sia lo stesso identico prodotto: può essere un alternativo molto simile.",
-        sectionHelp: {
-          title: "Uso lecito del confronto",
-          body: "Analizziamo una pagina pubblica alla volta per capire messaggi e struttura, non per copiare testi. Il tuo obiettivo è differenziarti: lo chiederemo al passo successivo.",
-        },
-        field: {
-          label: "Indirizzo (URL) della scheda concorrente",
-          hint: "Stesso formato del link Amazon che usi per migliorare la tua scheda.",
-          help: {
-            title: "Quale link usare",
-            body: "Apri la scheda del concorrente su Amazon e copia l’URL dalla barra degli indirizzi. Verifica di essere sul prodotto giusto prima di incollare.",
-          },
-        },
-      },
-      positioning: {
-        title: "Come ti vuoi posizionare",
-        description: "Spiega chi è il tuo cliente ideale e perché dovrebbe scegliere te.",
-        intro:
-          "Queste informazioni servono a generare testi distintivi. Non servono formule marketing: bastano frasi sincere sul tuo vantaggio.",
-        sectionHelp: {
-          title: "Differenziarsi in pratica",
-          body: "Più sei specifico su pubblico e vantaggio (qualità, servizio, garanzia, design), più il testo potrà essere credibile e aderente al tuo brand.",
-        },
-        audience: {
-          label: "Cliente ideale",
-          hint: "Chi comperebbe da te e non dal concorrente? Età, contesto, problema che risolve.",
-          example: "Professionisti che lavorano da casa e vogliono una postazione ordinata",
-          help: {
-            title: "Cosa scrivere",
-            body: "Pensa a una persona tipo: non serve un segmento perfetto, ma un’idea chiara di chi vuoi convincere.",
-          },
-        },
-        advantage: {
-          label: "Il tuo vantaggio principale",
-          hint: "Una o due frasi: cosa offri di concreto in più (o diverso).",
-          example: "Materiali certificati, imballo più robusto, assistenza in italiano entro 24 ore",
-          help: {
-            title: "Perché è importante",
-            body: "Il confronto con il concorrente serve a evidenziare il tuo plus. Evita slogan generici: preferisci fatti verificabili.",
-          },
-        },
-        narrative: {
-          label: "Messaggio o tono desiderato",
-          hint: "Facoltativo ma utile: tono formale/cordiale, enfasi su design, sostenibilità, ecc.",
-          placeholder:
-            "Es. voglio risultare affidabile e tecnico, meno ‘marketing’ del concorrente; enfatizzare garanzia 3 anni…",
-          optional: true,
-          help: {
-            title: "Angolo narrativo",
-            body: "Qui indichi come vuoi sembrare agli occhi del cliente: serio, friendly, premium, ecc. Aiuta a mantenere coerenza tra titolo e punti elenco.",
-          },
-        },
-      },
-      result: {
-        title: "Anteprima della nuova scheda",
-        description: "Qui comparirà la proposta di testi quando la generazione sarà attiva.",
-        intro:
-          "Non vedere ancora contenuti è normale: stiamo preparando il flusso. Completa i dati sopra così non dovrai ripetere il lavoro.",
-        emptyTitle: "Proposta non ancora pronta",
-        emptyBody:
-          "Quando il motore di generazione sarà collegato, qui troverai titolo, punti elenco, testi di supporto e note su parole chiave e conformità. Puoi salvare la bozza e tornare più tardi.",
-      },
-    },
-  },
   history: {
     title: "Cronologia",
     subtitle:
@@ -408,11 +233,12 @@ export const it = {
     pageTitle: "Generazione scheda Amazon",
     pageSubtitle:
       "Ogni sezione ha obiettivi diversi: titolo SEO, bullet, descrizione e keyword backend sono generate con pipeline dedicate, non con un unico prompt generico.",
-    loadStrategyError: "Impossibile caricare la strategia da questo elemento. Compila i campi manualmente o riapri da una bozza competitor.",
+    loadStrategyError:
+      "Impossibile caricare la strategia da questo elemento. Compila i campi qui o riapri da una bozza salvata (input manuale).",
     workItemHint: "Collegata a bozza cronologia. Puoi salvare gli output nella stessa attività.",
     strategyPanelTitle: "Strategia prodotto confermata",
     strategyPanelHint:
-      "Questi dati alimentano i prompt. Arrivano dal percorso competitor o li modifichi qui prima di generare.",
+      "Questi dati alimentano i prompt. Possono arrivare da una bozza salvata (campo manual_product_strategy) o li compili qui.",
     fields: {
       nome: "Nome prodotto",
       categoria: "Categoria",
@@ -460,7 +286,7 @@ export const it = {
     },
     editorHint: "Modifica liberamente il testo generato prima di copiarlo o salvare.",
     validationTitle: "Controlli qualità",
-    fromCompetitorCta: "Apri generazione scheda",
+    fromManualListingCta: "Apri generazione scheda",
   },
 } as const;
 

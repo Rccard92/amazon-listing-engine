@@ -6,7 +6,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.router import api_router
+from app.api.router import build_api_router
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     logger.info("CORS origins configurate: %s", cors_origins)
-    application.include_router(api_router, prefix=settings.api_v1_prefix)
+    application.include_router(build_api_router(), prefix=settings.api_v1_prefix)
     return application
 
 

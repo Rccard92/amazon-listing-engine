@@ -16,6 +16,10 @@ class ListingJob(Base):
     Traccia minimale di un job di ottimizzazione listing.
 
     Estendibile in seguito con stati, payload JSON, errori, ecc.
+
+    Nota cleanup MVP (2026): la tabella `listing_jobs` è creata da Alembic ma **nessun route o
+    servizio** nel codebase attivo la usa ancora. Conviene tenerla (vuota) finché non si decide
+    una migration di drop esplicita su tutti gli ambienti, per evitare drift schema.
     """
 
     __tablename__ = "listing_jobs"

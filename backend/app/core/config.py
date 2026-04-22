@@ -57,6 +57,11 @@ class Settings(BaseSettings):
         default=20,
         description="Limite richieste/minuto (placeholder).",
     )
+    enable_url_ingestion: bool = Field(
+        default=False,
+        description="Se true, espone POST /amazon/analyze e /workflows/create-from-similar (fetch/scrape competitor). "
+        "MVP manuale-first: default false.",
+    )
 
     openai_api_key: str = Field(
         default="",

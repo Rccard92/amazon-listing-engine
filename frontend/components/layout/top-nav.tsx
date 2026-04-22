@@ -4,15 +4,13 @@ import { Button } from "@/components/ui/button";
 import { it } from "@/lib/i18n/it";
 import { cn } from "@/lib/utils";
 
-const links = [
+const navLinks = [
   { href: "/", label: it.nav.home },
-  { href: "/competitor", label: it.nav.competitor },
-  { href: "/listing-generazione", label: it.nav.listingGeneration },
-  { href: "/improve", label: it.nav.improve },
   { href: "/new-listing", label: it.nav.newListing },
+  { href: "/listing-generazione", label: it.nav.listingGeneration },
   { href: "/history", label: it.nav.history },
   { href: "/projects", label: it.nav.projects },
-];
+] as const;
 
 type TopNavProps = {
   className?: string;
@@ -35,7 +33,7 @@ export function TopNav({ className }: TopNavProps) {
         </Link>
 
         <nav className="hidden items-center gap-1 rounded-2xl bg-slate-100/80 p-1 md:flex" aria-label="Navigazione principale">
-          {links.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -47,7 +45,7 @@ export function TopNav({ className }: TopNavProps) {
         </nav>
 
         <Button size="sm" variant="secondary" asChild>
-          <Link href="/competitor">{it.nav.cta}</Link>
+          <Link href="/new-listing">{it.nav.cta}</Link>
         </Button>
       </div>
     </header>

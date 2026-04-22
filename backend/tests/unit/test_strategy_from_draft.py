@@ -30,6 +30,40 @@ def test_confirmed_from_draft_and_user_merges_ur() -> None:
     assert len(out.keyword_primarie) >= 1
 
 
+def test_confirmed_strategy_from_work_item_input_prefers_manual_block() -> None:
+    inp = {
+        "manual_product_strategy": {
+            "nome_prodotto": "Manuale",
+            "categoria": "Casa",
+            "caratteristiche_tecniche": [],
+            "benefici_principali": ["b1"],
+            "usp_differenziazione": None,
+            "target_cliente": None,
+            "gestione_obiezioni": [],
+            "insight_recensioni_clienti": None,
+            "keyword_primarie": ["k1"],
+            "keyword_secondarie": [],
+            "linee_guida_brand": None,
+            "angolo_emotivo": None,
+            "livello_prezzo": "mid",
+        },
+        "ai_strategy_draft": {
+            "normalized_product_name": "AI",
+            "technical_features": [],
+            "main_benefits": [],
+            "strengths": [],
+            "probable_objections": [],
+            "evident_keywords": [],
+            "user_confirmation_fields": [],
+            "missing_information": [],
+            "confidence_notes": [],
+        },
+    }
+    s = confirmed_strategy_from_work_item_input(inp)
+    assert s.nome_prodotto == "Manuale"
+    assert s.livello_prezzo == "mid"
+
+
 def test_confirmed_strategy_from_work_item_input_minimal() -> None:
     inp = {
         "ai_strategy_draft": {

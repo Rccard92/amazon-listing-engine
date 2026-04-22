@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { MoveToProjectPopover } from "@/components/projects/move-to-project-popover";
@@ -11,6 +12,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadDropzone } from "@/components/ui/upload-dropzone";
 import { it } from "@/lib/i18n/it";
+import { buildManualProductStrategyFromNewListingForm, MANUAL_PRODUCT_STRATEGY_KEY } from "@/lib/listing-generation";
 import { useWorkItemDraft } from "@/lib/use-work-item-draft";
 
 const p = it.newListing;
@@ -35,10 +37,27 @@ export default function NewListingPage() {
       if (!item || cancelled) return;
       const input = item.input_data as Record<string, unknown>;
       const keyword = item.keyword_data as Record<string, unknown>;
-      setProductName((input.product_name as string) || "");
-      setCategory((input.category as string) || "");
-      setBenefits((input.benefits as string) || "");
-      setManualKeywords((keyword.manual_keywords as string) || "");
+      const mps = input[MANUAL_PRODUCT_STRATEGY_KEY] as
+        | {
+            nome_prodotto?: string;
+            categoria?: string | null;
+            benefici_principali?: string[];
+            keyword_primarie?: string[];
+            keyword_secondarie?: string[];
+          }
+        | undefined;
+      if (mps && typeof mps === "object" && "nome_prodotto" in mps) {
+        setProductName(mps.nome_prodotto || "");
+        setCategory((mps.categoria as string) || "");
+        setBenefits((mps.benefici_principali || []).join("\n"));
+        const kw = [...(mps.keyword_primarie || []), ...(mps.keyword_secondarie || [])].filter(Boolean);
+        setManualKeywords(kw.join(", "));
+      } else {
+        setProductName((input.product_name as string) || "");
+        setCategory((input.category as string) || "");
+        setBenefits((input.benefits as string) || "");
+        setManualKeywords((keyword.manual_keywords as string) || "");
+      }
       setUploadedFileNames((keyword.uploaded_files as string[]) || []);
     }
     void preload();
@@ -49,10 +68,21 @@ export default function NewListingPage() {
 
   async function persist(status: "draft" | "in_progress" | "completed" = "draft") {
     const summary = [productName, category].filter(Boolean).join(" • ") || "Bozza nuova scheda prodotto";
+    const manual_product_strategy = buildManualProductStrategyFromNewListingForm({
+      productName,
+      category,
+      benefits,
+      manualKeywords,
+    });
     await save({
       title: productName || p.title,
       summary,
-      inputData: { product_name: productName, category, benefits },
+      inputData: {
+        product_name: productName,
+        category,
+        benefits,
+        [MANUAL_PRODUCT_STRATEGY_KEY]: manual_product_strategy,
+      },
       keywordData: { manual_keywords: manualKeywords, uploaded_files: uploadedFileNames },
       generatedOutput: {},
       status,
@@ -63,7 +93,7 @@ export default function NewListingPage() {
   return (
     <main className="space-y-6">
       <header className="surface-card rounded-4xl p-8 sm:p-10">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{p.title} (avanzato)</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{p.title}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">{p.subtitle}</p>
       </header>
 
@@ -177,11 +207,16 @@ export default function NewListingPage() {
         {!isReady ? <p className="text-xs text-slate-500">Preparazione bozza in Cronologia...</p> : null}
       </div>
 
-      <div className="flex flex-col gap-3 pb-6 sm:flex-row sm:justify-end">
+      <div className="flex flex-col gap-3 pb-6 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center">
         <Button variant="ghost" type="button" onClick={() => void persist("draft")} disabled={!isReady}>
           {it.common.saveDraft}
         </Button>
         {workItemId ? <MoveToProjectPopover workItemId={workItemId} compact /> : null}
+        {workItemId ? (
+          <Button type="button" variant="secondary" asChild>
+            <Link href={`/listing-generazione?workItemId=${workItemId}`}>{it.listingGeneration.fromManualListingCta}</Link>
+          </Button>
+        ) : null}
         <Button type="button" onClick={() => void persist("in_progress")} disabled={!isReady}>
           {it.common.continue}
         </Button>
