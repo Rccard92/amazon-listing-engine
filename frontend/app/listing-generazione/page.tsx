@@ -245,7 +245,8 @@ function ListingGenerazioneContent() {
   return (
     <main className="space-y-6">
       <header className="surface-card rounded-4xl p-8 sm:p-10">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{p.pageTitle}</h1>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{p.phase3Badge}</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{p.pageTitle}</h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">{p.pageSubtitle}</p>
         {workItemId ? (
           <p className="mt-3 text-xs font-medium text-slate-500">
@@ -254,6 +255,35 @@ function ListingGenerazioneContent() {
         ) : null}
         {loadError ? <p className="mt-3 text-sm text-amber-800">{loadError}</p> : null}
       </header>
+
+      {strategy.nome_prodotto.trim() ? (
+        <section
+          className="surface-card rounded-4xl border border-slate-200/80 p-6 sm:p-8"
+          aria-label={p.readinessTitle}
+        >
+          <h2 className="text-sm font-semibold text-slate-900">{p.readinessTitle}</h2>
+          <p className="mt-1 text-xs text-slate-600">{p.readinessIntro}</p>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li className={strategy.nome_prodotto.trim() ? "text-emerald-800" : "text-amber-800"}>
+              {strategy.nome_prodotto.trim() ? `✓ ${p.readinessNomeOk}` : `· ${p.readinessNomeKo}`}
+            </li>
+            <li className={strategy.keyword_primarie.length ? "text-emerald-800" : "text-amber-800"}>
+              {strategy.keyword_primarie.length ? `✓ ${p.readinessKwOk}` : `· ${p.readinessKwKo}`}
+            </li>
+            <li
+              className={
+                strategy.benefici_principali.length || (strategy.usp_differenziazione || "").trim()
+                  ? "text-emerald-800"
+                  : "text-amber-800"
+              }
+            >
+              {strategy.benefici_principali.length || (strategy.usp_differenziazione || "").trim()
+                ? `✓ ${p.readinessBenefitOk}`
+                : `· ${p.readinessBenefitKo}`}
+            </li>
+          </ul>
+        </section>
+      ) : null}
 
       <section className="surface-card rounded-4xl p-6 sm:p-8">
         <h2 className="text-lg font-semibold text-slate-900">{p.strategyPanelTitle}</h2>

@@ -48,7 +48,7 @@ def generate_listing_section(payload: GenerateListingSectionRequest) -> ListingS
     status_code=status.HTTP_200_OK,
 )
 def get_confirmed_strategy_from_work_item(item_id: UUID, db: Session = Depends(get_db)) -> ConfirmedProductStrategy:
-    """Deriva la strategia confermata dal work item: `manual_product_strategy` se presente, altrimenti legacy competitor."""
+    """Deriva la strategia confermata: `product_brief` + `strategic_enrichment`, poi `manual_product_strategy`, poi legacy competitor."""
     item = work_item_service.get_item(db, item_id)
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Elemento non trovato.")

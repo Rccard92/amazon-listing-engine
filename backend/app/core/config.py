@@ -101,6 +101,11 @@ class Settings(BaseSettings):
         description="Limite byte per search terms backend (policy Amazon tipica).",
     )
 
+    dogma_md_path: str = Field(
+        default="",
+        description="Path assoluto a DOGMA.md; vuoto = percorso predefinito (root repo accanto a backend/).",
+    )
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def cors_origins_list(self) -> list[str]:

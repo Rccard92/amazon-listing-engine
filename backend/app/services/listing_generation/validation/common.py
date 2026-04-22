@@ -57,6 +57,26 @@ def validate_banned_phrases(text: str, banned: list[str]) -> list[ValidationIssu
     return issues
 
 
+def detect_excessive_uppercase(text: str, *, min_letters: int = 8, max_upper_ratio: float = 0.5) -> list[ValidationIssue]:
+    """Segnala titoli con troppe maiuscole (anti-DOGMA: no gridare)."""
+    if not text or not text.strip():
+        return []
+    letters = [c for c in text if c.isalpha()]
+    if len(letters) < min_letters:
+        return []
+    upper_n = sum(1 for c in letters if c.isupper())
+    if upper_n / len(letters) > max_upper_ratio:
+        return [
+            ValidationIssue(
+                code="excessive_uppercase",
+                severity="warning",
+                message_it="Troppe lettere maiuscole: il titolo rischia di sembrare gridato.",
+                field="seo_title",
+            )
+        ]
+    return []
+
+
 def merge_reports(*reports: ValidationReport) -> ValidationReport:
     issues: list[ValidationIssue] = []
     for r in reports:

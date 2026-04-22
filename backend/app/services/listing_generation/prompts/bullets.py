@@ -10,7 +10,7 @@ from app.services.listing_generation.prompts._context import (
 )
 
 
-def build_bullets_system_prompt() -> str:
+def build_bullets_system_prompt(*, dogma_addon: str = "") -> str:
     return (
         "Sei un copywriter Amazon per l'Italia. Devi produrre ESATTAMENTE 5 bullet point per scheda prodotto. "
         "Ogni bullet: una frase o due, focus su beneficio concreto collegato a feature; tono Amazon (non landing page, non teatrale). "
@@ -18,6 +18,7 @@ def build_bullets_system_prompt() -> str:
         "Niente emoji, niente 'scopri', 'wow', 'incredibile'. "
         "Output SOLO JSON valido, senza markdown, nel formato: "
         '{"bullets": ["...", "...", "...", "...", "..."]}'
+        f"{dogma_addon}"
     )
 
 

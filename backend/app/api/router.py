@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.routes import health, listing_generation, projects, work_items
+from app.api.routes import health, listing_generation, manual_workflow, projects, work_items
 from app.core.config import get_settings
 
 
@@ -18,6 +18,7 @@ def build_api_router() -> APIRouter:
         api_router.include_router(workflows.router, tags=["workflows"])
 
     api_router.include_router(listing_generation.router, tags=["listing-generation"])
+    api_router.include_router(manual_workflow.router, tags=["manual-workflow"])
     api_router.include_router(projects.router, tags=["projects"])
     api_router.include_router(work_items.router, tags=["work-items"])
     return api_router

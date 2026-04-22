@@ -8,25 +8,58 @@ import { FormField } from "@/components/workflow/form-field";
 import { StepSection } from "@/components/workflow/step-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadDropzone } from "@/components/ui/upload-dropzone";
 import { it } from "@/lib/i18n/it";
-import { buildManualProductStrategyFromNewListingForm, MANUAL_PRODUCT_STRATEGY_KEY } from "@/lib/listing-generation";
+import {
+  DEFAULT_BRAND,
+  emptyProductBrief,
+  migrateLegacyManualToBriefAndEnrichment,
+  PRODUCT_BRIEF_KEY,
+  STRATEGIC_ENRICHMENT_KEY,
+  type PriceTier,
+  type ProductBrief,
+} from "@/lib/listing-generation";
 import { useWorkItemDraft } from "@/lib/use-work-item-draft";
+import { getWorkItem } from "@/lib/work-items";
 
 const p = it.newListing;
+const b = p.brief;
+const tierOptions: { value: PriceTier; label: string }[] = [
+  { value: "unknown", label: "Non specificato" },
+  { value: "entry", label: "Entry / accessibile" },
+  { value: "mid", label: "Mid-range" },
+  { value: "premium", label: "Premium" },
+];
+
+function splitKeywords(text: string): string[] {
+  return text
+    .split(/[,\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function PhaseStrip() {
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-slate-100/90 p-2 text-xs font-medium text-slate-600">
+      <span className="rounded-xl bg-white px-3 py-1.5 text-slate-900 shadow-sm">{p.phases.data}</span>
+      <span className="text-slate-400">→</span>
+      <span className="rounded-xl px-3 py-1.5">{p.phases.enrich}</span>
+      <span className="text-slate-400">→</span>
+      <span className="rounded-xl px-3 py-1.5">{p.phases.generate}</span>
+    </div>
+  );
+}
 
 export default function NewListingPage() {
-  const [productName, setProductName] = useState("");
-  const [category, setCategory] = useState("");
-  const [benefits, setBenefits] = useState("");
-  const [manualKeywords, setManualKeywords] = useState("");
+  const [brief, setBrief] = useState<ProductBrief>(() => emptyProductBrief());
+  const [kwPrimaryText, setKwPrimaryText] = useState("");
+  const [kwSecondaryText, setKwSecondaryText] = useState("");
+  const [caratteristicheText, setCaratteristicheText] = useState("");
   const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
 
-  const fallbackTitle = useMemo(() => p.title, []);
-  const draft = useWorkItemDraft({ workflowType: "new_listing", fallbackTitle });
+  const draft = useWorkItemDraft({ workflowType: "new_listing", fallbackTitle: p.title });
   const { isReady, load, save, workItemId } = draft;
 
   useEffect(() => {
@@ -37,26 +70,41 @@ export default function NewListingPage() {
       if (!item || cancelled) return;
       const input = item.input_data as Record<string, unknown>;
       const keyword = item.keyword_data as Record<string, unknown>;
-      const mps = input[MANUAL_PRODUCT_STRATEGY_KEY] as
-        | {
-            nome_prodotto?: string;
-            categoria?: string | null;
-            benefici_principali?: string[];
-            keyword_primarie?: string[];
-            keyword_secondarie?: string[];
-          }
-        | undefined;
-      if (mps && typeof mps === "object" && "nome_prodotto" in mps) {
-        setProductName(mps.nome_prodotto || "");
-        setCategory((mps.categoria as string) || "");
-        setBenefits((mps.benefici_principali || []).join("\n"));
-        const kw = [...(mps.keyword_primarie || []), ...(mps.keyword_secondarie || [])].filter(Boolean);
-        setManualKeywords(kw.join(", "));
+      const pbRaw = input[PRODUCT_BRIEF_KEY];
+      if (pbRaw && typeof pbRaw === "object" && !Array.isArray(pbRaw)) {
+        const pb = pbRaw as ProductBrief;
+        setBrief({
+          ...emptyProductBrief(),
+          ...pb,
+          brand: (pb.brand || DEFAULT_BRAND).trim() || DEFAULT_BRAND,
+          bullet_attuali: Array.isArray(pb.bullet_attuali) ? [...pb.bullet_attuali] : [],
+          caratteristiche_specifiche: Array.isArray(pb.caratteristiche_specifiche)
+            ? [...pb.caratteristiche_specifiche]
+            : [],
+          keyword_primarie: Array.isArray(pb.keyword_primarie) ? [...pb.keyword_primarie] : [],
+          keyword_secondarie: Array.isArray(pb.keyword_secondarie) ? [...pb.keyword_secondarie] : [],
+        });
+        setKwPrimaryText((pb.keyword_primarie || []).join(", "));
+        setKwSecondaryText((pb.keyword_secondarie || []).join(", "));
+        setCaratteristicheText((pb.caratteristiche_specifiche || []).join("\n"));
       } else {
-        setProductName((input.product_name as string) || "");
-        setCategory((input.category as string) || "");
-        setBenefits((input.benefits as string) || "");
-        setManualKeywords((keyword.manual_keywords as string) || "");
+        const mig = migrateLegacyManualToBriefAndEnrichment(input);
+        if (mig) {
+          setBrief(mig.brief);
+          setKwPrimaryText(mig.brief.keyword_primarie.join(", "));
+          setKwSecondaryText(mig.brief.keyword_secondarie.join(", "));
+          setCaratteristicheText(mig.brief.caratteristiche_specifiche.join("\n"));
+        } else {
+          setBrief({
+            ...emptyProductBrief(),
+            nome_prodotto: String(input.product_name || ""),
+            categoria: input.category ? String(input.category) : null,
+            brand: DEFAULT_BRAND,
+          });
+          setKwPrimaryText(String((keyword.manual_keywords as string) || ""));
+          setKwSecondaryText("");
+          setCaratteristicheText("");
+        }
       }
       setUploadedFileNames((keyword.uploaded_files as string[]) || []);
     }
@@ -66,28 +114,63 @@ export default function NewListingPage() {
     };
   }, [isReady, load]);
 
+  const briefForSave = useMemo((): ProductBrief => {
+    const lines = caratteristicheText
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return {
+      ...brief,
+      caratteristiche_specifiche: lines,
+      keyword_primarie: splitKeywords(kwPrimaryText),
+      keyword_secondarie: splitKeywords(kwSecondaryText),
+    };
+  }, [brief, caratteristicheText, kwPrimaryText, kwSecondaryText]);
+
   async function persist(status: "draft" | "in_progress" | "completed" = "draft") {
-    const summary = [productName, category].filter(Boolean).join(" • ") || "Bozza nuova scheda prodotto";
-    const manual_product_strategy = buildManualProductStrategyFromNewListingForm({
-      productName,
-      category,
-      benefits,
-      manualKeywords,
-    });
+    const bSave = briefForSave;
+    const summary =
+      [bSave.nome_prodotto, bSave.categoria].filter(Boolean).join(" • ") || "Bozza nuova scheda prodotto";
+    const prev =
+      workItemId != null ? ((await getWorkItem(workItemId))?.input_data as Record<string, unknown> | undefined) : undefined;
+    const enrichment = prev?.[STRATEGIC_ENRICHMENT_KEY];
     await save({
-      title: productName || p.title,
+      title: bSave.nome_prodotto || p.title,
       summary,
       inputData: {
-        product_name: productName,
-        category,
-        benefits,
-        [MANUAL_PRODUCT_STRATEGY_KEY]: manual_product_strategy,
+        ...(prev && typeof prev === "object" ? prev : {}),
+        product_name: bSave.nome_prodotto,
+        category: bSave.categoria ?? "",
+        [PRODUCT_BRIEF_KEY]: bSave,
+        ...(enrichment !== undefined ? { [STRATEGIC_ENRICHMENT_KEY]: enrichment } : {}),
       },
-      keywordData: { manual_keywords: manualKeywords, uploaded_files: uploadedFileNames },
+      keywordData: {
+        manual_keywords: [kwPrimaryText, kwSecondaryText].filter(Boolean).join("\n"),
+        uploaded_files: uploadedFileNames,
+      },
       generatedOutput: {},
       status,
     });
     setLastSavedAt(new Date().toLocaleTimeString("it-IT"));
+  }
+
+  function setBullet(i: number, value: string) {
+    setBrief((prev) => {
+      const next = [...prev.bullet_attuali];
+      next[i] = value;
+      return { ...prev, bullet_attuali: next };
+    });
+  }
+
+  function addBullet() {
+    setBrief((prev) => ({ ...prev, bullet_attuali: [...prev.bullet_attuali, ""] }));
+  }
+
+  function removeBullet(i: number) {
+    setBrief((prev) => ({
+      ...prev,
+      bullet_attuali: prev.bullet_attuali.filter((_, j) => j !== i),
+    }));
   }
 
   return (
@@ -95,14 +178,18 @@ export default function NewListingPage() {
       <header className="surface-card rounded-4xl p-8 sm:p-10">
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{p.title}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">{p.subtitle}</p>
+        <div className="mt-6 space-y-2">
+          <PhaseStrip />
+          <p className="text-xs text-slate-500">{p.phases.phase1Active}</p>
+        </div>
       </header>
 
       <StepSection
         step={1}
-        title={p.steps.product.title}
-        description={p.steps.product.description}
-        intro={p.steps.product.intro}
-        sectionHelp={p.steps.product.sectionHelp}
+        title={b.identityTitle}
+        description={b.identityIntro}
+        intro=""
+        sectionHelp={{ title: p.steps.product.sectionHelp.title, body: p.steps.product.sectionHelp.body }}
       >
         <div className="grid gap-4 md:grid-cols-2">
           <FormField
@@ -114,8 +201,8 @@ export default function NewListingPage() {
           >
             <Input
               placeholder={p.steps.product.fields.name.example}
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
+              value={brief.nome_prodotto}
+              onChange={(e) => setBrief({ ...brief, nome_prodotto: e.target.value })}
             />
           </FormField>
           <FormField
@@ -127,84 +214,141 @@ export default function NewListingPage() {
           >
             <Input
               placeholder={p.steps.product.fields.category.example}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={brief.categoria ?? ""}
+              onChange={(e) => setBrief({ ...brief, categoria: e.target.value || null })}
             />
           </FormField>
-          <FormField
-            className="md:col-span-2"
-            required
-            label={p.steps.product.fields.benefits.label}
-            hint={p.steps.product.fields.benefits.hint}
-            example={p.steps.product.fields.benefits.example}
-            help={p.steps.product.fields.benefits.help}
-          >
+          <FormField label={b.brand.label} hint={b.brand.hint}>
+            <Input
+              value={brief.brand}
+              onChange={(e) => setBrief({ ...brief, brand: e.target.value || DEFAULT_BRAND })}
+            />
+          </FormField>
+          <FormField label={b.priceTier.label}>
+            <select
+              className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+              value={brief.livello_prezzo}
+              onChange={(e) => setBrief({ ...brief, livello_prezzo: e.target.value as PriceTier })}
+            >
+              {tierOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </div>
+      </StepSection>
+
+      <StepSection step={2} title={b.referenceTitle} description={b.referenceIntro} intro="" sectionHelp={undefined}>
+        <div className="grid gap-4">
+          <FormField label={b.descrizioneAttuale.label} hint={b.descrizioneAttuale.hint}>
             <Textarea
-              placeholder={p.steps.product.fields.benefits.example}
-              value={benefits}
-              onChange={(e) => setBenefits(e.target.value)}
+              rows={6}
+              value={brief.descrizione_attuale ?? ""}
+              onChange={(e) => setBrief({ ...brief, descrizione_attuale: e.target.value || null })}
+              placeholder={b.descrizioneAttuale.hint}
+            />
+          </FormField>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-800">{b.bulletAttuali.label}</p>
+            <p className="text-xs text-slate-500">{b.bulletAttuali.hint}</p>
+            <div className="space-y-2">
+              {brief.bullet_attuali.map((line, i) => (
+                <div key={i} className="flex gap-2">
+                  <Input value={line} onChange={(e) => setBullet(i, e.target.value)} placeholder={`Bullet ${i + 1}`} />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => removeBullet(i)}>
+                    {b.bulletAttuali.remove}
+                  </Button>
+                </div>
+              ))}
+              <Button type="button" variant="secondary" size="sm" onClick={addBullet}>
+                {b.bulletAttuali.add}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </StepSection>
+
+      <StepSection step={3} title={b.specsTitle} description={b.specsIntro} intro="" sectionHelp={undefined}>
+        <div className="grid gap-4">
+          <FormField label={b.caratteristiche.label} hint={b.caratteristiche.hint}>
+            <Textarea
+              rows={5}
+              value={caratteristicheText}
+              onChange={(e) => setCaratteristicheText(e.target.value)}
+            />
+          </FormField>
+          <FormField label={b.dettagliArticolo.label} hint={b.dettagliArticolo.hint}>
+            <Textarea
+              rows={4}
+              value={brief.dettagli_articolo ?? ""}
+              onChange={(e) => setBrief({ ...brief, dettagli_articolo: e.target.value || null })}
+            />
+          </FormField>
+          <FormField label={b.dettagliAggiuntivi.label} hint={b.dettagliAggiuntivi.hint}>
+            <Textarea
+              rows={3}
+              value={brief.dettagli_aggiuntivi ?? ""}
+              onChange={(e) => setBrief({ ...brief, dettagli_aggiuntivi: e.target.value || null })}
+            />
+          </FormField>
+          <FormField label={b.riassuntoRecensioni.label} hint={b.riassuntoRecensioni.hint}>
+            <Textarea
+              rows={3}
+              value={brief.riassunto_ai_recensioni ?? ""}
+              onChange={(e) => setBrief({ ...brief, riassunto_ai_recensioni: e.target.value || null })}
+            />
+          </FormField>
+          <FormField label={b.lineeGuida.label} hint={b.lineeGuida.hint}>
+            <Textarea
+              rows={3}
+              value={brief.linee_guida_brand ?? ""}
+              onChange={(e) => setBrief({ ...brief, linee_guida_brand: e.target.value || null })}
+            />
+          </FormField>
+          <FormField label={b.noteUtente.label} hint={b.noteUtente.hint}>
+            <Textarea
+              rows={2}
+              value={brief.note_utente ?? ""}
+              onChange={(e) => setBrief({ ...brief, note_utente: e.target.value || null })}
             />
           </FormField>
         </div>
       </StepSection>
 
       <StepSection
-        step={2}
-        title={p.steps.keywords.title}
-        description={p.steps.keywords.description}
-        intro={p.steps.keywords.intro}
+        step={4}
+        title={b.kwTitle}
+        description={b.kwIntro}
+        intro=""
         sectionHelp={p.steps.keywords.sectionHelp}
       >
-        <Tabs
-          groupLabel={p.steps.keywords.tabsAriaLabel}
-          items={[
-            {
-              key: "manual",
-              label: p.steps.keywords.tabs.manual,
-              content: (
-                <FormField
-                  label={p.steps.keywords.manual.label}
-                  hint={p.steps.keywords.manual.hint}
-                  help={p.steps.keywords.manual.help}
-                >
-                  <Textarea
-                    placeholder={p.steps.keywords.manual.placeholder}
-                    rows={5}
-                    value={manualKeywords}
-                    onChange={(e) => setManualKeywords(e.target.value)}
-                  />
-                </FormField>
-              ),
-            },
-            {
-              key: "csv",
-              label: p.steps.keywords.tabs.csv,
-              content: <p className="text-sm leading-relaxed text-slate-600">{p.steps.keywords.csvBlurb}</p>,
-            },
-          ]}
-        />
-      </StepSection>
-
-      <StepSection
-        step={3}
-        title={p.steps.upload.title}
-        description={p.steps.upload.description}
-        intro={p.steps.upload.intro}
-        sectionHelp={p.steps.upload.sectionHelp}
-      >
-        <UploadDropzone
-          title={p.dropzone.title}
-          description={p.dropzone.description}
-          emptyMessage={p.dropzone.empty}
-          selectedHeading={p.dropzone.selectedHeading}
-          footerHint={p.dropzone.hintLine}
-          onFilesSelected={(files) => setUploadedFileNames(files.map((f) => f.name))}
-        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField label={b.kwPrimary.label} hint={b.kwPrimary.hint}>
+            <Textarea rows={4} value={kwPrimaryText} onChange={(e) => setKwPrimaryText(e.target.value)} />
+          </FormField>
+          <FormField label={b.kwSecondary.label} hint={b.kwSecondary.hint}>
+            <Textarea rows={4} value={kwSecondaryText} onChange={(e) => setKwSecondaryText(e.target.value)} />
+          </FormField>
+        </div>
+        <div className="mt-6">
+          <p className="mb-3 text-sm font-medium text-slate-800">{p.steps.keywords.tabs.csv}</p>
+          <UploadDropzone
+            title={p.dropzone.title}
+            description={p.dropzone.description}
+            emptyMessage={p.dropzone.empty}
+            selectedHeading={p.dropzone.selectedHeading}
+            footerHint={p.dropzone.hintLine}
+            onFilesSelected={(files) => setUploadedFileNames(files.map((f) => f.name))}
+          />
+        </div>
       </StepSection>
 
       <div className="space-y-2 pb-6">
         {lastSavedAt ? <p className="text-xs text-slate-500">Salvato alle {lastSavedAt}</p> : null}
         {!isReady ? <p className="text-xs text-slate-500">Preparazione bozza in Cronologia...</p> : null}
+        <p className="text-xs text-slate-500">{p.phases.afterSave}</p>
       </div>
 
       <div className="flex flex-col gap-3 pb-6 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center">
@@ -214,7 +358,7 @@ export default function NewListingPage() {
         {workItemId ? <MoveToProjectPopover workItemId={workItemId} compact /> : null}
         {workItemId ? (
           <Button type="button" variant="secondary" asChild>
-            <Link href={`/listing-generazione?workItemId=${workItemId}`}>{it.listingGeneration.fromManualListingCta}</Link>
+            <Link href={`/arricchimento-strategico?workItemId=${workItemId}`}>{b.goEnrich}</Link>
           </Button>
         ) : null}
         <Button type="button" onClick={() => void persist("in_progress")} disabled={!isReady}>

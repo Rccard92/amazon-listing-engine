@@ -3,6 +3,7 @@
 from app.schemas.listing_generation import InjectedRules, ValidationIssue, ValidationReport
 
 from app.services.listing_generation.validation.common import (
+    detect_excessive_uppercase,
     detect_keyword_stuffing,
     merge_reports,
     validate_banned_phrases,
@@ -36,9 +37,11 @@ def validate_seo_title(
             )
         )
     banned = list(rules.banned_phrases) if rules else []
-    stuffing = detect_keyword_stuffing(title, max_single_word_ratio=0.35, min_tokens=4)
+    stuffing = detect_keyword_stuffing(title, max_single_word_ratio=0.28, min_tokens=4)
+    caps = detect_excessive_uppercase(title)
     return merge_reports(
         ValidationReport(issues=issues),
         ValidationReport(issues=validate_banned_phrases(title, banned)),
         ValidationReport(issues=stuffing),
+        ValidationReport(issues=caps),
     )

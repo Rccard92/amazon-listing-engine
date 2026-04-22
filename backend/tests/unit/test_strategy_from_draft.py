@@ -2,6 +2,8 @@
 
 from app.schemas.product_ai_analysis import ProductStrategyDraft
 from app.services.listing_generation.strategy_from_draft import (
+    PRODUCT_BRIEF_KEY,
+    STRATEGIC_ENRICHMENT_KEY,
     confirmed_from_draft_and_user,
     confirmed_strategy_from_work_item_input,
 )
@@ -28,6 +30,56 @@ def test_confirmed_from_draft_and_user_merges_ur() -> None:
     assert "Mai gridare" in (out.linee_guida_brand or "")
     assert out.livello_prezzo == "entry"
     assert len(out.keyword_primarie) >= 1
+
+
+def test_confirmed_strategy_from_work_item_input_prefers_product_brief() -> None:
+    inp = {
+        PRODUCT_BRIEF_KEY: {
+            "nome_prodotto": "Briefed",
+            "categoria": "Cucina",
+            "brand": "Meridiana",
+            "descrizione_attuale": None,
+            "bullet_attuali": ["a", "b"],
+            "caratteristiche_specifiche": ["acciaio"],
+            "dettagli_articolo": None,
+            "dettagli_aggiuntivi": None,
+            "riassunto_ai_recensioni": "Clienti lodano la robustezza.",
+            "keyword_primarie": ["k1"],
+            "keyword_secondarie": ["k2"],
+            "livello_prezzo": "mid",
+            "linee_guida_brand": None,
+            "note_utente": None,
+        },
+        STRATEGIC_ENRICHMENT_KEY: {
+            "benefici_principali": ["Duraturo"],
+            "usp_differenziazione": "USP test",
+            "target_cliente": "Famiglie",
+            "gestione_obiezioni": ["Prezzo"],
+            "angolo_emotivo": "Sicurezza",
+            "enrichment_provenance": "llm_v1",
+        },
+        "manual_product_strategy": {
+            "nome_prodotto": "Ignorato",
+            "categoria": None,
+            "caratteristiche_tecniche": [],
+            "benefici_principali": [],
+            "usp_differenziazione": None,
+            "target_cliente": None,
+            "gestione_obiezioni": [],
+            "insight_recensioni_clienti": None,
+            "keyword_primarie": [],
+            "keyword_secondarie": [],
+            "linee_guida_brand": None,
+            "angolo_emotivo": None,
+            "livello_prezzo": "unknown",
+        },
+    }
+    s = confirmed_strategy_from_work_item_input(inp)
+    assert s.nome_prodotto == "Briefed"
+    assert s.usp_differenziazione == "USP test"
+    assert "acciaio" in s.caratteristiche_tecniche
+    assert s.keyword_primarie == ["k1"]
+    assert s.angolo_emotivo == "Sicurezza"
 
 
 def test_confirmed_strategy_from_work_item_input_prefers_manual_block() -> None:

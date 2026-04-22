@@ -43,4 +43,13 @@ def validate_backend_search_terms(text: str, *, max_bytes: int) -> ValidationRep
                 field="backend_search_terms",
             )
         )
+    if "," in text:
+        issues.append(
+            ValidationIssue(
+                code="search_terms_commas",
+                severity="warning",
+                message_it="Per lo stile backend Amazon IT preferisci termini separati da spazio, non virgole.",
+                field="backend_search_terms",
+            )
+        )
     return ValidationReport(issues=issues)

@@ -8,9 +8,15 @@ from pydantic import ValidationError
 
 from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy, PriceTier
 from app.schemas.product_ai_analysis import ProductStrategyDraft
+from app.schemas.product_brief import ProductBrief
+from app.schemas.strategic_enrichment import StrategicEnrichment
+from app.services.manual_workflow.assemble_strategy import assemble_confirmed_strategy
 
 # Chiave in `WorkItem.input_data` per strategia strutturata salvata dal form manuale (MVP manuale-first).
 MANUAL_PRODUCT_STRATEGY_KEY = "manual_product_strategy"
+# Brief strutturato (Fase 1) + arricchimento (Fase 2) — preferito rispetto al solo manual_product_strategy flat.
+PRODUCT_BRIEF_KEY = "product_brief"
+STRATEGIC_ENRICHMENT_KEY = "strategic_enrichment"
 
 
 def _split_lines(value: str | None) -> list[str]:
@@ -124,7 +130,16 @@ def confirmed_strategy_from_manual_dict(raw: object) -> ConfirmedProductStrategy
 
 
 def confirmed_strategy_from_work_item_input(input_data: dict) -> ConfirmedProductStrategy:
-    """Best-effort: prima `manual_product_strategy`, altrimenti competitor/draft legacy."""
+    """Best-effort: `product_brief` + `strategic_enrichment`, poi `manual_product_strategy`, poi legacy competitor."""
+    pb_raw = input_data.get(PRODUCT_BRIEF_KEY)
+    if isinstance(pb_raw, dict):
+        brief = ProductBrief.model_validate(pb_raw)
+        enr_raw = input_data.get(STRATEGIC_ENRICHMENT_KEY)
+        enr: StrategicEnrichment | None = None
+        if isinstance(enr_raw, dict):
+            enr = StrategicEnrichment.model_validate(enr_raw)
+        return assemble_confirmed_strategy(brief, enr)
+
     manual = input_data.get(MANUAL_PRODUCT_STRATEGY_KEY)
     parsed_manual = confirmed_strategy_from_manual_dict(manual)
     if parsed_manual is not None:
