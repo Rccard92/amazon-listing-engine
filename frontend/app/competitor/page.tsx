@@ -11,9 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { it } from "@/lib/i18n/it";
 import { useWorkItemDraft } from "@/lib/use-work-item-draft";
-import { createFromSimilar, type SimilarField } from "@/lib/workflows";
+import { createFromSimilar, type SimilarField, type WorkflowErrorDetail } from "@/lib/workflows";
 
 const p = it.createFromSimilar;
+const errCatalog = it.workflowErrors as Record<string, string>;
+
+function resolveWorkflowMessage(detail: WorkflowErrorDetail | null): string {
+  if (!detail) return p.errors.unknownServer;
+  return errCatalog[detail.error_code] ?? detail.message_it;
+}
 
 export default function CompetitorPage() {
   const [competitorUrl, setCompetitorUrl] = useState("");
@@ -30,6 +36,10 @@ export default function CompetitorPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [extractionStatus, setExtractionStatus] = useState<"complete" | "partial" | "failed" | null>(null);
+  const [allowContinue, setAllowContinue] = useState(true);
+  const [aiErrorBanner, setAiErrorBanner] = useState<WorkflowErrorDetail | null>(null);
+  const [partialDismissed, setPartialDismissed] = useState(false);
 
   const fallbackTitle = useMemo(() => p.title, []);
   const draft = useWorkItemDraft({ workflowType: "competitor_analysis", fallbackTitle });
@@ -83,8 +93,10 @@ export default function CompetitorPage() {
   async function analyzeAndPrefill() {
     if (!competitorUrl || !isReady) return;
     setErrorText(null);
+    setAiErrorBanner(null);
+    setPartialDismissed(false);
     setIsAnalyzing(true);
-    const response = await createFromSimilar({
+    const result = await createFromSimilar({
       competitor_url: competitorUrl,
       work_item_id: workItemId,
       user_required: {
@@ -101,16 +113,22 @@ export default function CompetitorPage() {
       },
     });
     setIsAnalyzing(false);
-    if (!response) {
-      setErrorText("Non sono riuscito ad analizzare il prodotto simile. Controlla l'URL e riprova.");
+    if (!result.ok) {
+      setExtractionStatus(null);
+      setAllowContinue(true);
+      setErrorText(result.error ? resolveWorkflowMessage(result.error) : p.errors.generic);
       return;
     }
+    const response = result.data;
     setPrefilledFields(response.fields);
     setAnalysisMeta({
       normalizedUrl: response.normalized_url,
       parserUsed: response.parser_used,
       warnings: response.warnings,
     });
+    setExtractionStatus(response.extraction_status);
+    setAllowContinue(response.allow_continue);
+    setAiErrorBanner(response.ai_error);
     setLastSavedAt(new Date().toLocaleTimeString("it-IT"));
   }
 
@@ -151,6 +169,25 @@ export default function CompetitorPage() {
           </Button>
         </div>
         {errorText ? <p className="mt-2 text-sm text-rose-600">{errorText}</p> : null}
+        {!allowContinue && extractionStatus ? (
+          <p className="mt-2 text-sm text-rose-700">
+            Non è possibile proseguire automaticamente con questa analisi. Correggi l&apos;URL o riprova più tardi.
+          </p>
+        ) : null}
+        {extractionStatus === "partial" && !partialDismissed ? (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+            <p>{p.hints.partialExtraction}</p>
+            <Button type="button" variant="secondary" size="sm" className="mt-2" onClick={() => setPartialDismissed(true)}>
+              {p.hints.dismissWarning}
+            </Button>
+          </div>
+        ) : null}
+        {aiErrorBanner ? (
+          <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50/90 px-4 py-3 text-sm text-orange-950">
+            <p className="font-medium">{p.hints.aiSoftFailure}</p>
+            <p className="mt-1 text-orange-900/90">{resolveWorkflowMessage(aiErrorBanner)}</p>
+          </div>
+        ) : null}
         {analysisMeta ? (
           <p className="mt-2 text-xs text-slate-500">
             URL normalizzato: {analysisMeta.normalizedUrl} • parser: {analysisMeta.parserUsed}

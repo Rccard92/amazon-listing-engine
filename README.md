@@ -90,6 +90,11 @@ Comando equivalente inline:
 alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
 ```
 
+Variabili consigliate per l’analisi AI del workflow “da prodotto simile” (vedi `.env.example`):
+
+- `OPENAI_API_KEY` — obbligatoria per la bozza strategica strutturata; se assente il salvataggio resta possibile ma con fallback e messaggio lato UI.
+- `OPENAI_MODEL`, `OPENAI_TIMEOUT_SECONDS`, `OPENAI_MAX_INPUT_CHARS` — opzionali con default in `app.core.config`.
+
 Nota: se il servizio Railway parte dalla root repo, usa:
 
 ```bash

@@ -112,6 +112,37 @@ export const it = {
       regenerate: "Rianalizza URL",
       continue: "Continua con bozza guidata",
     },
+    hints: {
+      partialExtraction:
+        "Estrazione parziale: alcuni dati dalla pagina potrebbero mancare. Verifica i campi e prosegui con cautela.",
+      aiSoftFailure:
+        "L'analisi AI strutturata non è andata a buon fine; abbiamo comunque salvato l'estrazione dalla pagina e i suggerimenti di base.",
+      dismissWarning: "Ho capito, continuo",
+    },
+    errors: {
+      generic: "Non sono riuscito a completare l'analisi. Controlla l'URL e riprova.",
+      unknownServer: "Il server ha restituito un errore non strutturato. Riprova tra poco.",
+    },
+  },
+  /** Fallback IT allineati alla tassonomia backend (`error_code`). Il messaggio del server ha priorità se diverso. */
+  workflowErrors: {
+    INVALID_URL: "L'indirizzo inserito non è valido.",
+    UNSUPPORTED_MARKETPLACE: "Dominio Amazon non supportato.",
+    ASIN_NOT_FOUND: "Non siamo riusciti a individuare il codice prodotto (ASIN) dal link.",
+    FETCH_TIMEOUT: "La pagina ha impiegato troppo tempo a rispondere. Riprova più tardi.",
+    FETCH_HTTP_403: "Accesso alla pagina negato. Amazon potrebbe limitare la visualizzazione automatica.",
+    FETCH_HTTP_429: "Troppe richieste verso Amazon. Attendi qualche minuto e riprova.",
+    FETCH_HTTP_ERROR: "Errore durante il caricamento della pagina.",
+    CHALLENGE_DETECTED:
+      "Amazon ha mostrato un controllo anti-bot. Apri il link nel browser e riprova più tardi.",
+    EXTRACTION_EMPTY: "Pagina caricata ma non abbiamo estratto dati prodotto utili.",
+    EXTRACTION_PARTIAL: "Estrazione parziale: alcuni dati mancano; puoi continuare con cautela.",
+    PARSER_ERROR: "Errore nell'analisi della pagina.",
+    OPENAI_NOT_CONFIGURED: "Servizio di analisi AI non configurato sul server.",
+    OPENAI_REQUEST_FAILED: "L'analisi automatica non è riuscita. Riprova.",
+    OPENAI_RATE_LIMIT: "Limite richieste al servizio AI. Riprova tra poco.",
+    AI_OUTPUT_INVALID: "Risposta dell'AI non valida. Riprova.",
+    UNKNOWN: "Si è verificato un errore imprevisto.",
   },
   newListing: {
     title: "Nuova inserzione",

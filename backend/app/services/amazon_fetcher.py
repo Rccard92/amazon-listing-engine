@@ -11,6 +11,20 @@ from app.core.config import get_settings
 class AmazonFetchError(RuntimeError):
     """Errore fetch pagina Amazon."""
 
+    status_code: int | None = None
+
+
+class AmazonFetchTimeoutError(AmazonFetchError):
+    """Timeout durante il fetch."""
+
+
+class AmazonFetchHttpError(AmazonFetchError):
+    """Risposta HTTP di errore da Amazon."""
+
+    def __init__(self, message: str, *, status_code: int) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
 
 class AmazonFetchChallengeError(AmazonFetchError):
     """Challenge/anti-bot rilevato nella risposta."""
@@ -44,11 +58,36 @@ class AmazonFetcher:
             try:
                 with httpx.Client(timeout=timeout, follow_redirects=True, headers=headers) as client:
                     response = client.get(url)
+                if response.status_code == 403:
+                    raise AmazonFetchHttpError(
+                        "Accesso negato (HTTP 403).",
+                        status_code=403,
+                    )
+                if response.status_code == 429:
+                    raise AmazonFetchHttpError(
+                        "Troppe richieste (HTTP 429).",
+                        status_code=429,
+                    )
                 if response.status_code >= 400:
-                    raise AmazonFetchError(f"Errore HTTP durante fetch Amazon: {response.status_code}")
+                    raise AmazonFetchHttpError(
+                        f"Errore HTTP durante fetch Amazon: {response.status_code}",
+                        status_code=response.status_code,
+                    )
                 html = response.text
                 self._raise_if_challenge(html)
                 return FetchedPage(url=str(response.url), status_code=response.status_code, html=html)
+            except AmazonFetchTimeoutError:
+                raise
+            except AmazonFetchHttpError:
+                raise
+            except AmazonFetchChallengeError:
+                raise
+            except httpx.TimeoutException as exc:
+                last_exc = AmazonFetchTimeoutError("Timeout durante il fetch della pagina Amazon.") from exc
+                if attempt < self.settings.amazon_fetch_max_retries:
+                    time.sleep(self.settings.amazon_fetch_min_delay_ms / 1000)
+                else:
+                    raise last_exc from exc
             except (httpx.HTTPError, AmazonFetchError) as exc:
                 last_exc = exc
                 if attempt < self.settings.amazon_fetch_max_retries:

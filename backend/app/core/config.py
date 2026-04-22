@@ -58,6 +58,23 @@ class Settings(BaseSettings):
         description="Limite richieste/minuto (placeholder).",
     )
 
+    openai_api_key: str = Field(
+        default="",
+        description="Chiave API OpenAI (solo server, mai esposta al frontend).",
+    )
+    openai_model: str = Field(
+        default="gpt-4o-mini",
+        description="Modello OpenAI per analisi strutturata prodotto.",
+    )
+    openai_timeout_seconds: float = Field(
+        default=90.0,
+        description="Timeout richieste OpenAI.",
+    )
+    openai_max_input_chars: int = Field(
+        default=48_000,
+        description="Limite caratteri del payload testuale inviato al modello.",
+    )
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def cors_origins_list(self) -> list[str]:
