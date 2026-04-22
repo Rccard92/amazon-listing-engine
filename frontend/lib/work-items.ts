@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/lib/api";
+import { buildApiUrl } from "@/lib/api";
 
 export type WorkflowType = "new_listing" | "improve_listing" | "competitor_analysis";
 export type WorkItemStatus = "draft" | "in_progress" | "completed";
@@ -35,13 +35,13 @@ export type WorkItemCreatePayload = {
 export type WorkItemUpdatePayload = Partial<WorkItemCreatePayload>;
 
 export async function listHistory(): Promise<WorkItem[]> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/history`, { cache: "no-store" });
+  const res = await fetch(buildApiUrl("/api/v1/history"), { cache: "no-store" });
   if (!res.ok) return [];
   return (await res.json()) as WorkItem[];
 }
 
 export async function listWorkItems(projectFolderId?: string): Promise<WorkItem[]> {
-  const url = new URL(`${getApiBaseUrl()}/api/v1/work-items`);
+  const url = new URL(buildApiUrl("/api/v1/work-items"));
   if (projectFolderId) url.searchParams.set("project_folder_id", projectFolderId);
   const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) return [];
@@ -49,13 +49,13 @@ export async function listWorkItems(projectFolderId?: string): Promise<WorkItem[
 }
 
 export async function getWorkItem(itemId: string): Promise<WorkItem | null> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/work-items/${itemId}`, { cache: "no-store" });
+  const res = await fetch(buildApiUrl(`/api/v1/work-items/${itemId}`), { cache: "no-store" });
   if (!res.ok) return null;
   return (await res.json()) as WorkItem;
 }
 
 export async function createWorkItem(payload: WorkItemCreatePayload): Promise<WorkItem | null> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/work-items`, {
+  const res = await fetch(buildApiUrl("/api/v1/work-items"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -65,7 +65,7 @@ export async function createWorkItem(payload: WorkItemCreatePayload): Promise<Wo
 }
 
 export async function updateWorkItem(itemId: string, payload: WorkItemUpdatePayload): Promise<WorkItem | null> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/work-items/${itemId}`, {
+  const res = await fetch(buildApiUrl(`/api/v1/work-items/${itemId}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -75,7 +75,7 @@ export async function updateWorkItem(itemId: string, payload: WorkItemUpdatePayl
 }
 
 export async function duplicateWorkItem(itemId: string): Promise<WorkItem | null> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/work-items/${itemId}/duplicate`, {
+  const res = await fetch(buildApiUrl(`/api/v1/work-items/${itemId}/duplicate`), {
     method: "POST",
   });
   if (!res.ok) return null;
@@ -83,7 +83,7 @@ export async function duplicateWorkItem(itemId: string): Promise<WorkItem | null
 }
 
 export async function deleteWorkItem(itemId: string): Promise<boolean> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/work-items/${itemId}`, { method: "DELETE" });
+  const res = await fetch(buildApiUrl(`/api/v1/work-items/${itemId}`), { method: "DELETE" });
   return res.status === 204;
 }
 
