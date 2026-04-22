@@ -73,6 +73,29 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - Health (liveness): `GET http://localhost:8000/api/v1/health`
 - Health (readiness + DB): `GET http://localhost:8000/api/v1/health/ready`
 
+## Deploy Railway (backend)
+
+Per evitare errori come `relation "project_folders" does not exist`, il deploy deve
+eseguire sempre le migrazioni prima di avviare Uvicorn.
+
+Start command consigliato (servizio backend, working directory `backend`):
+
+```bash
+./start.sh
+```
+
+Comando equivalente inline:
+
+```bash
+alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+Nota: se il servizio Railway parte dalla root repo, usa:
+
+```bash
+cd backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
 ## Frontend (Next.js)
 
 ```bash
