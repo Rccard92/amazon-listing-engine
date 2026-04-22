@@ -50,7 +50,7 @@ class OpenAIListingLLMClient:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                max_tokens=max_output_tokens,
+                max_completion_tokens=max_output_tokens,
             )
         except APITimeoutError as exc:
             logger.warning("Timeout OpenAI listing: %s", exc)
