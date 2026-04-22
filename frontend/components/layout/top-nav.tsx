@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: it.nav.home },
+  { href: "/competitor", label: it.nav.competitor },
+  { href: "/improve", label: it.nav.improve },
+  { href: "/new-listing", label: it.nav.newListing },
   { href: "/history", label: it.nav.history },
   { href: "/projects", label: it.nav.projects },
-  { href: "/new-listing", label: it.nav.newListing },
-  { href: "/improve", label: it.nav.improve },
-  { href: "/competitor", label: it.nav.competitor },
 ];
 
 type TopNavProps = {
@@ -46,7 +46,7 @@ export function TopNav({ className }: TopNavProps) {
         </nav>
 
         <Button size="sm" variant="secondary" asChild>
-          <Link href="/new-listing">{it.nav.cta}</Link>
+          <Link href="/competitor">{it.nav.cta}</Link>
         </Button>
       </div>
     </header>

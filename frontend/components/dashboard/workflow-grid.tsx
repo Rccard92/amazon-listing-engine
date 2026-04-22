@@ -18,13 +18,11 @@ const ACCENTS = [
   "from-amber-500/15 to-orange-500/10",
 ] as const;
 
-const HREFS = ["/new-listing", "/improve", "/competitor"] as const;
-
 export function WorkflowGrid() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       {it.workflows.cards.map((w, i) => (
-        <Card key={HREFS[i]} className="group relative overflow-hidden border-slate-200/70">
+        <Card key={w.href} className="group relative overflow-hidden border-slate-200/70">
           <div
             className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${ACCENTS[i]} opacity-80 transition group-hover:opacity-100`}
             aria-hidden
@@ -42,7 +40,7 @@ export function WorkflowGrid() {
           </CardContent>
           <CardFooter className="relative">
             <Button asChild variant="primary" className="w-full">
-              <Link href={HREFS[i]}>{w.cta}</Link>
+              <Link href={w.href}>{w.cta}</Link>
             </Button>
           </CardFooter>
         </Card>

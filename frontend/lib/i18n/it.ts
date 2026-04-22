@@ -11,12 +11,12 @@ export const it = {
   },
   nav: {
     home: "Home",
-    newListing: "Nuova scheda prodotto",
+    newListing: "Crea da zero (avanzato)",
     improve: "Migliora scheda esistente",
-    competitor: "Da concorrente",
+    competitor: "Crea da prodotto simile",
     history: "Cronologia",
     projects: "Progetti salvati",
-    cta: "Inizia qui",
+    cta: "Crea da prodotto simile",
   },
   common: {
     required: "Obbligatorio",
@@ -42,12 +42,12 @@ export const it = {
   home: {
     kicker: "Amazon Listing Engine",
     heroTitle:
-      "Crea o migliora la tua scheda prodotto Amazon con un percorso guidato, chiaro e veloce.",
+      "Crea nuove schede prodotto Amazon partendo da un prodotto simile, con un percorso guidato e adatto anche ai non esperti.",
     heroBody:
-      "La piattaforma è pensata per venditori, brand e consulenti che vogliono decidere subito cosa fare: creare una nuova scheda prodotto, migliorare una scheda esistente o analizzare un competitor.",
+      "Parti da una pagina Amazon simile per ridurre il rischio di pagina bianca: il sistema precompila i dati utili e ti guida solo sulle decisioni davvero strategiche per il tuo brand.",
     workflowsHeading: "Cosa vuoi fare adesso?",
     workflowsIntro:
-      "Scegli uno dei tre percorsi principali: ogni flusso ti guida passo passo con istruzioni semplici e pratiche.",
+      "Scegli uno dei percorsi guidati: il primo e consigliato parte da un prodotto simile e ti aiuta a costruire una scheda piu' solida con meno attrito.",
     benefitsHeading: "Perché usare questa piattaforma",
     benefitsIntro:
       "Ti aiutiamo a lavorare sulle schede prodotto in modo più ordinato, con meno dubbi e decisioni più rapide.",
@@ -72,15 +72,17 @@ export const it = {
   workflows: {
     cards: [
       {
-        title: "Crea nuova scheda prodotto",
+        href: "/competitor",
+        title: "Crea da prodotto simile",
         description:
-          "Parti dai dati del prodotto e dalle parole chiave per costruire una scheda prodotto nuova, completa e facile da leggere.",
-        badge: "Nuova scheda",
+          "Incolla un prodotto Amazon simile: estraiamo i segnali utili, precompiliamo una bozza e ti guidiamo sulle differenze che contano.",
+        badge: "Consigliato",
         nextHint:
-          "Inserisci le informazioni principali e procedi per passaggi. Puoi salvare la bozza e continuare quando vuoi.",
-        cta: "Crea scheda prodotto",
+          "Parti da un URL, rivedi i campi precompilati e conferma le scelte prima della generazione finale.",
+        cta: "Inizia da prodotto simile",
       },
       {
+        href: "/improve",
         title: "Migliora scheda prodotto esistente",
         description:
           "Incolla il link della tua scheda Amazon e individua in modo guidato cosa migliorare in titolo, punti elenco e contenuti.",
@@ -90,15 +92,26 @@ export const it = {
         cta: "Migliora scheda",
       },
       {
-        title: "Analizza competitor",
+        href: "/new-listing",
+        title: "Crea da zero (avanzato)",
         description:
-          "Prendi come riferimento una pagina concorrente e crea una scheda prodotto con posizionamento più distintivo.",
-        badge: "Confronto",
+          "Compila manualmente tutti i dati del prodotto. Percorso utile se hai gia' strategia, dati e keyword molto chiari.",
+        badge: "Avanzato",
         nextHint:
-          "Condividi il link del concorrente e come vuoi distinguerti: il flusso ti guida nelle scelte chiave.",
-        cta: "Analizza competitor",
+          "Percorso completo ma meno assistito: consigliato solo se non hai un prodotto simile da cui partire.",
+        cta: "Apri creazione manuale",
       },
     ],
+  },
+  createFromSimilar: {
+    title: "Crea una nuova scheda da prodotto simile",
+    subtitle:
+      "Incolla un prodotto Amazon simile: analizziamo la pagina, precompiliamo una bozza strategica e ti chiediamo solo le scelte specifiche del tuo brand.",
+    actions: {
+      analyze: "Analizza e precompila",
+      regenerate: "Rianalizza URL",
+      continue: "Continua con bozza guidata",
+    },
   },
   newListing: {
     title: "Nuova inserzione",

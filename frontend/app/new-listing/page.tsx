@@ -63,7 +63,7 @@ export default function NewListingPage() {
   return (
     <main className="space-y-6">
       <header className="surface-card rounded-4xl p-8 sm:p-10">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{p.title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{p.title} (avanzato)</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">{p.subtitle}</p>
       </header>
 
