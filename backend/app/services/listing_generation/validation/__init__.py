@@ -1,0 +1,1 @@
+"""Validatori per sezione listing."""

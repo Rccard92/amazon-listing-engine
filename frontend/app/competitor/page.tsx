@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { MoveToProjectPopover } from "@/components/projects/move-to-project-popover";
@@ -306,11 +307,16 @@ export default function CompetitorPage() {
         {lastSavedAt ? <p className="text-xs text-slate-500">Salvato alle {lastSavedAt}</p> : null}
       </div>
 
-      <div className="flex flex-col gap-3 pb-6 sm:flex-row sm:justify-end">
+      <div className="flex flex-col gap-3 pb-6 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center">
         <Button variant="ghost" type="button" onClick={() => void persistDraft("draft")} disabled={!isReady}>
           {it.common.saveDraft}
         </Button>
         {workItemId ? <MoveToProjectPopover workItemId={workItemId} compact /> : null}
+        {workItemId ? (
+          <Button type="button" variant="secondary" asChild>
+            <Link href={`/listing-generazione?workItemId=${workItemId}`}>{it.listingGeneration.fromCompetitorCta}</Link>
+          </Button>
+        ) : null}
         <Button type="button" onClick={() => void persistDraft("in_progress")} disabled={!isReady}>
           {p.actions.continue}
         </Button>

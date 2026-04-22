@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const links = [
   { href: "/", label: it.nav.home },
   { href: "/competitor", label: it.nav.competitor },
+  { href: "/listing-generazione", label: it.nav.listingGeneration },
   { href: "/improve", label: it.nav.improve },
   { href: "/new-listing", label: it.nav.newListing },
   { href: "/history", label: it.nav.history },

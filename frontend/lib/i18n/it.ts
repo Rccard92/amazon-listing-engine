@@ -14,6 +14,7 @@ export const it = {
     newListing: "Crea da zero (avanzato)",
     improve: "Migliora scheda esistente",
     competitor: "Crea da prodotto simile",
+    listingGeneration: "Generazione scheda",
     history: "Cronologia",
     projects: "Progetti salvati",
     cta: "Crea da prodotto simile",
@@ -142,6 +143,7 @@ export const it = {
     OPENAI_REQUEST_FAILED: "L'analisi automatica non è riuscita. Riprova.",
     OPENAI_RATE_LIMIT: "Limite richieste al servizio AI. Riprova tra poco.",
     AI_OUTPUT_INVALID: "Risposta dell'AI non valida. Riprova.",
+    STRATEGY_INCOMPLETE: "Completa almeno il nome prodotto nella strategia prima di generare.",
     UNKNOWN: "Si è verificato un errore imprevisto.",
   },
   newListing: {
@@ -401,6 +403,64 @@ export const it = {
     projectDescriptionLabel: "Descrizione (facoltativa)",
     projectDescriptionPlaceholder: "Es. Linea utensili 2026",
     noItemsInProject: "Questa cartella non contiene ancora elementi.",
+  },
+  listingGeneration: {
+    pageTitle: "Generazione scheda Amazon",
+    pageSubtitle:
+      "Ogni sezione ha obiettivi diversi: titolo SEO, bullet, descrizione e keyword backend sono generate con pipeline dedicate, non con un unico prompt generico.",
+    loadStrategyError: "Impossibile caricare la strategia da questo elemento. Compila i campi manualmente o riapri da una bozza competitor.",
+    workItemHint: "Collegata a bozza cronologia. Puoi salvare gli output nella stessa attività.",
+    strategyPanelTitle: "Strategia prodotto confermata",
+    strategyPanelHint:
+      "Questi dati alimentano i prompt. Arrivano dal percorso competitor o li modifichi qui prima di generare.",
+    fields: {
+      nome: "Nome prodotto",
+      categoria: "Categoria",
+      keywordsPrimary: "Keyword primarie (virgola)",
+      keywordsSecondary: "Keyword secondarie (virgola)",
+      usp: "USP / differenziazione",
+      target: "Target cliente",
+      brand: "Linee guida brand",
+      priceTier: "Livello prezzo (tono)",
+      features: "Caratteristiche tecniche (una per riga)",
+      benefits: "Benefici principali (una per riga)",
+      objections: "Obiezioni da gestire (una per riga)",
+      reviews: "Insight recensioni (opzionale)",
+    },
+    tiers: {
+      unknown: "Non specificato",
+      entry: "Entry / accessibile",
+      mid: "Mid-range",
+      premium: "Premium",
+    },
+    sections: {
+      seo_title: {
+        label: "Titolo SEO",
+        goal: "Massimizza chiarezza e CTR con keyword naturali, senza stuffing. Rispetta il limite caratteri.",
+      },
+      bullet_points: {
+        label: "Bullet point",
+        goal: "Cinque punti elenco conversion-oriented: benefici concreti, tono Amazon (non landing page).",
+      },
+      description: {
+        label: "Descrizione",
+        goal: "Testo lungo credibile, paragrafi brevi, USP e obiezioni integrate senza ripetizioni eccessive.",
+      },
+      keyword_strategy: {
+        label: "Keyword backend",
+        goal: "Search terms stile Seller Central IT: termini separati da spazio, copertura semantica, no slogan generici.",
+      },
+    },
+    actions: {
+      generate: "Genera questa sezione",
+      regenerate: "Rigenera",
+      copy: "Copia",
+      saveOutput: "Salva output nella bozza",
+      savedOutput: "Output salvato nella bozza",
+    },
+    editorHint: "Modifica liberamente il testo generato prima di copiarlo o salvare.",
+    validationTitle: "Controlli qualità",
+    fromCompetitorCta: "Apri generazione scheda",
   },
 } as const;
 

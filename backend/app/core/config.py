@@ -74,6 +74,27 @@ class Settings(BaseSettings):
         default=48_000,
         description="Limite caratteri del payload testuale inviato al modello.",
     )
+    openai_listing_model: str = Field(
+        default="",
+        description="Modello OpenAI per generazione copy listing; se vuoto usa openai_model.",
+    )
+
+    listing_seo_title_max_chars: int = Field(
+        default=200,
+        description="Limite caratteri titolo SEO (allineare alle policy Amazon per categoria).",
+    )
+    listing_description_min_chars: int = Field(
+        default=200,
+        description="Lunghezza minima desiderata descrizione (validazione soft).",
+    )
+    listing_description_max_chars: int = Field(
+        default=2000,
+        description="Limite caratteri descrizione (MVP configurabile).",
+    )
+    listing_backend_search_terms_max_bytes: int = Field(
+        default=249,
+        description="Limite byte per search terms backend (policy Amazon tipica).",
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
