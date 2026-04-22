@@ -11,9 +11,11 @@ export const it = {
   },
   nav: {
     home: "Home",
-    newListing: "Nuova inserzione",
-    improve: "Migliora inserzione",
+    newListing: "Nuova scheda prodotto",
+    improve: "Migliora scheda esistente",
     competitor: "Da concorrente",
+    history: "Cronologia",
+    projects: "Progetti salvati",
     cta: "Inizia qui",
   },
   common: {
@@ -27,76 +29,74 @@ export const it = {
     cancel: "Annulla",
     startAudit: "Avvia analisi",
     generateProposal: "Genera proposta",
+    open: "Apri",
+    rename: "Rinomina",
+    duplicate: "Duplica",
+    moveToProject: "Sposta in un progetto",
+    delete: "Elimina",
+    createProject: "Crea nuovo progetto",
+    createAndMove: "Crea e sposta",
+    save: "Salva",
+    loading: "Caricamento in corso...",
   },
   home: {
     kicker: "Amazon Listing Engine",
     heroTitle:
-      "Crea, migliora e differenzia le tue schede prodotto su Amazon, con percorsi semplici e guidati.",
+      "Crea o migliora la tua scheda prodotto Amazon con un percorso guidato, chiaro e veloce.",
     heroBody:
-      "Ti accompagniamo passo passo: raccogliamo le informazioni giuste, le organizziamo e ti aiutiamo a ottenere inserzioni più chiare e competitive, senza passaggi tecnici complessi.",
-    statusCardTitle: "Stato del servizio",
-    statusConnected: "Servizio attivo",
-    statusDisconnected: "Momentaneamente non disponibile",
-    statusLimited: "Servizio limitato",
-    statusDetailWhenUpPrefix: "Tutto ok: puoi usare le funzioni che dipendono dal server.",
-    statusDetailWhenDown:
-      "Il servizio non risponde. Controlla che l’applicazione sia avviata oppure riprova tra qualche minuto.",
-    statusDetailHintTechnical:
-      "Se gestisci tu il sistema, controlla che il servizio sia avviato e che l’indirizzo di collegamento sia corretto nelle impostazioni.",
-    statusTechnicalToggle: "Dettagli per tecnici",
-    workflowsHeading: "Scegli cosa vuoi fare",
+      "La piattaforma è pensata per venditori, brand e consulenti che vogliono decidere subito cosa fare: creare una nuova scheda prodotto, migliorare una scheda esistente o analizzare un competitor.",
+    workflowsHeading: "Cosa vuoi fare adesso?",
     workflowsIntro:
-      "Tre percorsi pensati per chi usa Amazon ogni giorno ma non vuole perdere tempo in strumenti complicati.",
-    scoreCards: {
-      quality: {
-        title: "Qualità inserzione",
-        delta: "+6",
+      "Scegli uno dei tre percorsi principali: ogni flusso ti guida passo passo con istruzioni semplici e pratiche.",
+    benefitsHeading: "Perché usare questa piattaforma",
+    benefitsIntro:
+      "Ti aiutiamo a lavorare sulle schede prodotto in modo più ordinato, con meno dubbi e decisioni più rapide.",
+    benefits: [
+      {
+        title: "Percorso guidato per i testi",
         description:
-          "Stima di quanto la scheda può migliorare dopo revisione testi e parole chiave (valore dimostrativo).",
+          "Compili pochi campi alla volta con esempi e spiegazioni, così è più facile ottenere una scheda prodotto chiara.",
       },
-      keywords: {
-        title: "Copertura parole chiave",
-        delta: "+12",
+      {
+        title: "Analisi mirata di una pagina Amazon",
         description:
-          "Quanto il listing copre le ricerche utili: qui mancano ancora alcune ricerche a intenzione alta.",
+          "Parti da un link specifico per capire cosa migliorare senza confusione e senza attività massive.",
       },
-      compliance: {
-        title: "Conformità",
-        delta: "stabile",
-        description: "Allineamento ai vincoli tipici delle regole Amazon (titolo, claims, termini sensibili).",
-      },
-      progress: {
-        title: "Avanzamento piattaforma",
+      {
+        title: "Keyword manuali o file Helium10",
         description:
-          "Stiamo collegando analisi automatiche e suggerimenti: alcune schermate mostrano ancora esempi dimostrativi.",
+          "Puoi lavorare nel modo che preferisci: scrittura libera o caricamento CSV, sempre con indicazioni pratiche.",
       },
-    },
+    ],
   },
   workflows: {
     cards: [
       {
-        title: "Nuova inserzione",
+        title: "Crea nuova scheda prodotto",
         description:
-          "Parti dai dati del prodotto e dalle parole chiave (anche da file Helium10) per generare una scheda ordinata e pronta da rifinire.",
-        badge: "Creazione",
+          "Parti dai dati del prodotto e dalle parole chiave per costruire una scheda prodotto nuova, completa e facile da leggere.",
+        badge: "Nuova scheda",
         nextHint:
-          "Compila i campi con calma: più dettagli inserisci, più i suggerimenti saranno mirati. Puoi salvare e tornare dopo.",
+          "Inserisci le informazioni principali e procedi per passaggi. Puoi salvare la bozza e continuare quando vuoi.",
+        cta: "Crea scheda prodotto",
       },
       {
-        title: "Migliora un’inserzione esistente",
+        title: "Migliora scheda prodotto esistente",
         description:
-          "Incolla il link della tua scheda Amazon: ti aiutiamo a capire cosa ottimizzare nel titolo, nei punti elenco e nel testo.",
-        badge: "Ottimizzazione",
+          "Incolla il link della tua scheda Amazon e individua in modo guidato cosa migliorare in titolo, punti elenco e contenuti.",
+        badge: "Miglioramento",
         nextHint:
-          "Ti chiederemo l’indirizzo della pagina e cosa vuoi migliorare per primo. Un passaggio alla volta.",
+          "Ti chiediamo solo il link e il tuo obiettivo principale: da lì parti subito con suggerimenti utili.",
+        cta: "Migliora scheda",
       },
       {
-        title: "Nuova scheda da concorrente",
+        title: "Analizza competitor",
         description:
-          "Usa la pagina di un concorrente come spunto: costruisci una proposta diversa, con il tuo posizionamento.",
+          "Prendi come riferimento una pagina concorrente e crea una scheda prodotto con posizionamento più distintivo.",
         badge: "Confronto",
         nextHint:
-          "Servono il link del concorrente e poche righe su come vuoi distinguerti: ti guidiamo con domande semplici.",
+          "Condividi il link del concorrente e come vuoi distinguerti: il flusso ti guida nelle scelte chiave.",
+        cta: "Analizza competitor",
       },
     ],
   },
@@ -333,6 +333,30 @@ export const it = {
           "Quando il motore di generazione sarà collegato, qui troverai titolo, punti elenco, testi di supporto e note su parole chiave e conformità. Puoi salvare la bozza e tornare più tardi.",
       },
     },
+  },
+  history: {
+    title: "Cronologia",
+    subtitle:
+      "Qui trovi tutte le attività recenti e in corso, anche quelle non ancora assegnate a un progetto.",
+    emptyTitle: "Nessuna attività salvata",
+    emptyBody:
+      "Inizia uno dei percorsi principali e troverai qui la tua scheda prodotto in automatico, pronta da riprendere.",
+    moveHint: "Puoi organizzare ogni attività con l'azione “Sposta in un progetto”.",
+  },
+  projects: {
+    title: "Progetti salvati",
+    subtitle:
+      "Organizza il lavoro in cartelle progetto. Ogni cartella può contenere più schede prodotto o analisi.",
+    emptyTitle: "Nessun progetto creato",
+    emptyBody:
+      "Crea il primo progetto per organizzare le attività salvate in Cronologia.",
+    insideTitle: "Contenuto progetto",
+    insideSubtitle: "Elementi presenti nella cartella selezionata.",
+    projectNameLabel: "Nome progetto",
+    projectNamePlaceholder: "Es. Accessori cucina",
+    projectDescriptionLabel: "Descrizione (facoltativa)",
+    projectDescriptionPlaceholder: "Es. Linea utensili 2026",
+    noItemsInProject: "Questa cartella non contiene ancora elementi.",
   },
 } as const;
 

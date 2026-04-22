@@ -41,8 +41,8 @@ export function WorkflowGrid() {
             <p className="mt-1 text-sm text-slate-700">{w.nextHint}</p>
           </CardContent>
           <CardFooter className="relative">
-            <Button asChild variant="secondary" className="w-full sm:w-auto">
-              <Link href={HREFS[i]}>{it.common.openWorkflow}</Link>
+            <Button asChild variant="primary" className="w-full">
+              <Link href={HREFS[i]}>{w.cta}</Link>
             </Button>
           </CardFooter>
         </Card>

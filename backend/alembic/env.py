@@ -12,6 +12,7 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import get_settings
 from app.db.base import Base
 from app.models import ListingJob  # noqa: F401 — registra metadati
+from app.models import ProjectFolder, WorkItem  # noqa: F401 — registra metadati
 
 config = context.config
 if config.config_file_name is not None:
