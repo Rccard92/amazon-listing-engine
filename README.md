@@ -26,9 +26,19 @@ amazon-listing-engine/
 ## Configurazione ambiente
 
 1. Copia `.env.example` in `.env` nella root del progetto (stesso livello di `README.md`).
-2. Allinea `DATABASE_URL` e `NEXT_PUBLIC_API_URL` al tuo ambiente.
+2. Allinea `DATABASE_URL`, `CORS_ORIGINS` e `NEXT_PUBLIC_API_URL` al tuo ambiente.
 
 Il backend legge `.env` dalla root o da `backend/` (vedi `app/core/config.py`).
+
+### CORS_ORIGINS (locale + Railway)
+
+Il backend accetta due formati:
+
+- CSV (consigliato): `CORS_ORIGINS=https://frontend-production-cbba.up.railway.app,http://localhost:3000,http://127.0.0.1:3000`
+- JSON array: `CORS_ORIGINS=["https://frontend-production-cbba.up.railway.app","http://localhost:3000","http://127.0.0.1:3000"]`
+
+Assicurati che l'origine frontend di produzione sia sempre presente:
+`https://frontend-production-cbba.up.railway.app`
 
 ## Database (PostgreSQL)
 
@@ -48,6 +58,8 @@ python -m venv .venv
 pip install -r requirements.txt
 alembic upgrade head
 ```
+
+In produzione (Railway), eseguire `alembic upgrade head` e' obbligatorio prima di esporre traffico ai nuovi endpoint (`/api/v1/projects`, `/api/v1/work-items`), altrimenti il backend puo' rispondere con errore 500 per tabelle mancanti.
 
 ## Backend (FastAPI)
 

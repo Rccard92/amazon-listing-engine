@@ -1,6 +1,7 @@
 """Impostazioni applicative caricate da variabili d'ambiente."""
 
 from functools import lru_cache
+import json
 
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,8 +25,8 @@ class Settings(BaseSettings):
     )
 
     cors_origins: str = Field(
-        default="http://localhost:3000",
-        description="Origini CORS separate da virgola",
+        default="https://frontend-production-cbba.up.railway.app,http://localhost:3000,http://127.0.0.1:3000",
+        description="Origini CORS (CSV o JSON array).",
     )
 
     amazon_fetch_timeout_seconds: float = Field(
@@ -60,7 +61,26 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def cors_origins_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        raw = (self.cors_origins or "").strip()
+        if not raw:
+            return []
+
+        parsed: list[str]
+        if raw.startswith("["):
+            try:
+                loaded = json.loads(raw)
+                parsed = [str(origin) for origin in loaded] if isinstance(loaded, list) else []
+            except json.JSONDecodeError:
+                parsed = []
+        else:
+            parsed = [o.strip() for o in raw.split(",") if o.strip()]
+
+        normalized: list[str] = []
+        for origin in parsed:
+            value = origin.strip().rstrip("/")
+            if value and value not in normalized:
+                normalized.append(value)
+        return normalized
 
 
 @lru_cache
