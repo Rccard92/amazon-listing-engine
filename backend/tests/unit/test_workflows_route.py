@@ -1,0 +1,22 @@
+from fastapi.testclient import TestClient
+
+from app.api.routes import workflows
+from app.main import app
+from app.services.workflow_create_from_similar_service import WorkflowCreateFromSimilarError
+
+
+def test_create_from_similar_returns_clean_422_on_service_error(monkeypatch) -> None:
+    class FakeService:
+        def execute(self, db, payload):  # noqa: ANN001
+            raise WorkflowCreateFromSimilarError("Dati bozza non validi durante il salvataggio.")
+
+    monkeypatch.setattr(workflows, "service", FakeService())
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/workflows/create-from-similar",
+        json={"competitor_url": "https://www.amazon.it/dp/B08N5WRWNW"},
+    )
+
+    assert response.status_code == 422
+    assert "Dati bozza non validi" in response.json()["detail"]
+
