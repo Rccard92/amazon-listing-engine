@@ -194,7 +194,9 @@ function EnrichmentInner() {
                 <Link href={`/listing-generazione?workItemId=${workItemId}`}>{m.goGenerate}</Link>
               </Button>
               <Button type="button" variant="ghost" asChild>
-                <Link href={`/new-listing`}>{it.nav.newListing}</Link>
+                <Link href={workItemId ? `/new-listing?workItemId=${workItemId}` : "/new-listing"}>
+                  {it.nav.newListing}
+                </Link>
               </Button>
             </div>
           </section>

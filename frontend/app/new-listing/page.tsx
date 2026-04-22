@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { MoveToProjectPopover } from "@/components/projects/move-to-project-popover";
 import { FormField } from "@/components/workflow/form-field";
@@ -51,7 +51,7 @@ function PhaseStrip() {
   );
 }
 
-export default function NewListingPage() {
+function NewListingPageInner() {
   const [brief, setBrief] = useState<ProductBrief>(() => emptyProductBrief());
   const [kwPrimaryText, setKwPrimaryText] = useState("");
   const [kwSecondaryText, setKwSecondaryText] = useState("");
@@ -59,7 +59,11 @@ export default function NewListingPage() {
   const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
 
-  const draft = useWorkItemDraft({ workflowType: "new_listing", fallbackTitle: p.title });
+  const draft = useWorkItemDraft({
+    workflowType: "new_listing",
+    fallbackTitle: p.title,
+    basePath: "/new-listing",
+  });
   const { isReady, load, save, workItemId } = draft;
 
   useEffect(() => {
@@ -112,7 +116,7 @@ export default function NewListingPage() {
     return () => {
       cancelled = true;
     };
-  }, [isReady, load]);
+  }, [isReady, load, workItemId]);
 
   const briefForSave = useMemo((): ProductBrief => {
     const lines = caratteristicheText
@@ -131,9 +135,11 @@ export default function NewListingPage() {
     const bSave = briefForSave;
     const summary =
       [bSave.nome_prodotto, bSave.categoria].filter(Boolean).join(" • ") || "Bozza nuova scheda prodotto";
-    const prev =
-      workItemId != null ? ((await getWorkItem(workItemId))?.input_data as Record<string, unknown> | undefined) : undefined;
+    if (!workItemId) return;
+    const item = await getWorkItem(workItemId);
+    const prev = item?.input_data as Record<string, unknown> | undefined;
     const enrichment = prev?.[STRATEGIC_ENRICHMENT_KEY];
+    const existingOutput = (item?.generated_output as Record<string, unknown> | undefined) ?? {};
     await save({
       title: bSave.nome_prodotto || p.title,
       summary,
@@ -148,7 +154,7 @@ export default function NewListingPage() {
         manual_keywords: [kwPrimaryText, kwSecondaryText].filter(Boolean).join("\n"),
         uploaded_files: uploadedFileNames,
       },
-      generatedOutput: {},
+      generatedOutput: existingOutput,
       status,
     });
     setLastSavedAt(new Date().toLocaleTimeString("it-IT"));
@@ -366,5 +372,19 @@ export default function NewListingPage() {
         </Button>
       </div>
     </main>
+  );
+}
+
+export default function NewListingPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="p-8">
+          <p className="text-sm text-slate-600">{it.common.loading}</p>
+        </main>
+      }
+    >
+      <NewListingPageInner />
+    </Suspense>
   );
 }

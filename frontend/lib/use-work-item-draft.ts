@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -14,23 +15,32 @@ import {
 type UseWorkItemDraftOptions = {
   workflowType: WorkflowType;
   fallbackTitle: string;
+  /** Pathname senza query (es. `/new-listing`) per `router.replace` dopo creazione bozza. */
+  basePath?: string;
 };
 
-export function useWorkItemDraft({ workflowType, fallbackTitle }: UseWorkItemDraftOptions) {
-  const [workItemId, setWorkItemId] = useState<string | null>(null);
+export function useWorkItemDraft({
+  workflowType,
+  fallbackTitle,
+  basePath = "/new-listing",
+}: UseWorkItemDraftOptions) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const idFromUrl = searchParams.get("workItemId");
+
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const value = new URLSearchParams(window.location.search).get("workItemId");
-    if (value) setWorkItemId(value);
-  }, []);
+  const workItemId = idFromUrl ?? createdId;
 
   useEffect(() => {
+    if (idFromUrl) return;
+    if (createdId) return;
+
     let cancelled = false;
-    async function ensureItem() {
-      if (workItemId) return;
-      setLoading(true);
+    setLoading(true);
+
+    void (async () => {
       const created = await createWorkItem({
         title: fallbackTitle,
         workflow_type: workflowType,
@@ -39,16 +49,22 @@ export function useWorkItemDraft({ workflowType, fallbackTitle }: UseWorkItemDra
         keyword_data: {},
         generated_output: {},
       });
-      if (!cancelled) {
-        setWorkItemId(created?.id ?? null);
+      if (cancelled) {
         setLoading(false);
+        return;
       }
-    }
-    void ensureItem();
+      const id = created?.id ?? null;
+      if (id) {
+        setCreatedId(id);
+        router.replace(`${basePath}?workItemId=${encodeURIComponent(id)}`);
+      }
+      setLoading(false);
+    })();
+
     return () => {
       cancelled = true;
     };
-  }, [fallbackTitle, workflowType, workItemId]);
+  }, [idFromUrl, createdId, fallbackTitle, workflowType, router, basePath]);
 
   const save = useCallback(
     async ({
@@ -95,4 +111,3 @@ export function useWorkItemDraft({ workflowType, fallbackTitle }: UseWorkItemDra
 
   return { workItemId, isReady, loading, save, load };
 }
-
