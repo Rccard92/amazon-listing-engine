@@ -7,7 +7,7 @@ export const it = {
   brand: {
     short: "ALE",
     name: "Amazon Listing Engine",
-    tagline: "Motore per inserzioni Amazon",
+    tagline: "Motore per schede prodotto Amazon",
   },
   nav: {
     home: "Home",
@@ -114,7 +114,7 @@ export const it = {
     UNKNOWN: "Si è verificato un errore imprevisto.",
   },
   newListing: {
-    title: "Nuova inserzione",
+    title: "Nuova scheda prodotto",
     subtitle:
       "Raccogliamo le informazioni sul prodotto e sulle parole chiave. Non serve essere esperti: segui i passaggi e usa gli aiuti “?” accanto ai campi.",
     steps: {

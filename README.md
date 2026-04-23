@@ -1,6 +1,6 @@
 # Amazon Listing Engine
 
-Piattaforma full-stack (MVP) per ottimizzare inserzioni Amazon: backend **FastAPI**, database **PostgreSQL**, **SQLAlchemy 2**, migrazioni **Alembic**, validazione **Pydantic v2**, frontend **Next.js** + **TypeScript** e **Tailwind CSS**.
+Piattaforma full-stack (MVP) per ottimizzare schede prodotto Amazon: backend **FastAPI**, database **PostgreSQL**, **SQLAlchemy 2**, migrazioni **Alembic**, validazione **Pydantic v2**, frontend **Next.js** + **TypeScript** e **Tailwind CSS**.
 
 ## Struttura del repository
 
@@ -109,7 +109,7 @@ npm install
 npm run dev
 ```
 
-Apri `http://localhost:3000`. La dashboard mostra tre workflow principali (nuova inserzione con keywords/Helium10, miglioramento da URL, analisi concorrente) e lo stato dell’API.
+Apri `http://localhost:3000`. La dashboard mostra tre workflow principali (nuova scheda prodotto con keywords/Helium10, miglioramento da URL, analisi concorrente) e lo stato dell’API.
 
 ## Comandi di verifica rapida
 

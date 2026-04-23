@@ -6,7 +6,7 @@ import { TopNav } from "@/components/layout/top-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Amazon Listing Engine — ottimizza le tue inserzioni",
+  title: "Amazon Listing Engine — ottimizza le tue schede prodotto",
   description:
     "Crea e migliora schede prodotto Amazon con percorsi guidati, spiegazioni chiare e strumenti per parole chiave e confronto con i concorrenti.",
 };
