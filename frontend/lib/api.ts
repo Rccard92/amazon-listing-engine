@@ -22,8 +22,13 @@ export function normalizeApiBaseUrl(raw?: string): string {
 }
 
 export function buildApiUrl(path: string): string {
-  const base = getApiBaseUrl().replace(/\/+$/, "");
   const safePath = path.startsWith("/") ? path : `/${path}`;
+  // Nel browser passiamo sempre dal proxy Next.js per evitare errori CORS.
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin.replace(/\/+$/, "");
+    return `${origin}/api/proxy${safePath}`;
+  }
+  const base = getApiBaseUrl().replace(/\/+$/, "");
   return `${base}${safePath}`;
 }
 

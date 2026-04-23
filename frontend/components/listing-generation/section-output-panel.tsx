@@ -99,7 +99,12 @@ export function SectionOutputPanel({
           {p.actions.copy}
         </Button>
       </div>
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? (
+        <div className="rounded-2xl border border-rose-200/80 bg-rose-50/80 px-4 py-3">
+          <p className="text-sm font-medium text-rose-700">{error}</p>
+          <p className="mt-1 text-xs text-rose-700/90">{p.generationErrorHint}</p>
+        </div>
+      ) : null}
       {section === "bullet_points" ? (
         <div className="space-y-2">
           <p className="text-xs font-medium text-slate-500">{p.editorHint}</p>

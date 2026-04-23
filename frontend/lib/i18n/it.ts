@@ -343,6 +343,8 @@ export const it = {
       saveOutput: "Salva output nella bozza",
       savedOutput: "Output salvato nella bozza",
     },
+    generationErrorHint:
+      "Generazione non riuscita. Controlla la connessione e riprova tra qualche secondo. Se il problema continua, salva la bozza e aggiorna la pagina.",
     editorHint: "Modifica liberamente il testo generato prima di copiarlo o salvare.",
     validationTitle: "Controlli qualità",
     fromManualListingCta: "Apri generazione scheda",
