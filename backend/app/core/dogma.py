@@ -37,6 +37,33 @@ def _default_dogma_path() -> Path:
     return here.parents[3] / "DOGMA.md"
 
 
+def _resolve_dogma_path(raw_path: str | None = None) -> Path:
+    """Risoluzione robusta path DOGMA: vuoto/relativo/assoluto con fallback su root repo."""
+    default_path = _default_dogma_path().resolve()
+    value = (raw_path or "").strip()
+
+    if not value:
+        if default_path.is_file():
+            return default_path
+        raise FileNotFoundError(f"DOGMA.md non trovato nel percorso predefinito: '{default_path}'.")
+
+    configured = Path(value)
+    if configured.is_absolute():
+        candidate = configured.resolve()
+    else:
+        candidate = (_default_dogma_path().parent / configured).resolve()
+
+    if candidate.is_file():
+        return candidate
+    if default_path.is_file():
+        return default_path
+    raise FileNotFoundError(
+        "DOGMA.md non trovato. "
+        f"Path configurato: '{candidate}'. "
+        f"Fallback predefinito: '{default_path}'."
+    )
+
+
 def parse_dogma_markdown(content: str) -> dict[str, str]:
     """Estrae mappe H2 title -> corpo (testo sotto l'intestazione, senza il ##)."""
     sections: dict[str, str] = {}
@@ -56,7 +83,7 @@ def parse_dogma_markdown(content: str) -> dict[str, str]:
 
 
 def load_dogma_bundle(path: Path | None = None) -> DogmaBundle:
-    p = path or _default_dogma_path()
+    p = path.resolve() if path else _resolve_dogma_path()
     text = p.read_text(encoding="utf-8")
     return DogmaBundle(sections=parse_dogma_markdown(text))
 
@@ -68,14 +95,14 @@ def _cached_bundle(path_str: str) -> DogmaBundle:
 
 def get_dogma_bundle(path: Path | None = None) -> DogmaBundle:
     """Bundle in cache per path assoluto string."""
-    p = path or _default_dogma_path()
-    return _cached_bundle(str(p.resolve()))
+    p = path.resolve() if path else _resolve_dogma_path()
+    return _cached_bundle(str(p))
 
 
 def get_dogma_bundle_for_settings(dogma_md_path: str) -> DogmaBundle:
     """Risolve il path da Settings.dogma_md_path (vuoto = default repo root)."""
-    p = Path(dogma_md_path.strip()) if dogma_md_path.strip() else _default_dogma_path()
-    return _cached_bundle(str(p.resolve()))
+    p = _resolve_dogma_path(dogma_md_path)
+    return _cached_bundle(str(p))
 
 
 def build_system_addon_for_section(bundle: DogmaBundle, section: ListingDogmaSection) -> str:

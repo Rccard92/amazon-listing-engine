@@ -53,3 +53,46 @@ def test_default_path_points_to_repo_dogma() -> None:
     assert p.name == "DOGMA.md"
     assert p.parent.name != "backend"  # root è parent di backend
     assert p.is_file()
+
+
+def test_settings_path_missing_absolute_falls_back_to_repo_root(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.core import dogma as dogma_module
+    from app.core.dogma import get_dogma_bundle_for_settings
+
+    invalidate_dogma_cache()
+    here = Path(__file__).resolve()
+    repo_dogma = (here.parents[3] / "DOGMA.md").resolve()
+    monkeypatch.setattr(dogma_module, "_default_dogma_path", lambda: repo_dogma)
+    bundle = get_dogma_bundle_for_settings("/DOGMA.md")
+    assert H2_GLOBAL in bundle.sections
+
+
+def test_settings_relative_path_resolved_from_repo_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.core import dogma as dogma_module
+    from app.core.dogma import get_dogma_bundle_for_settings
+
+    invalidate_dogma_cache()
+    repo_root = tmp_path / "repo"
+    relative_dir = repo_root / "config"
+    relative_dir.mkdir(parents=True)
+    default_dogma = repo_root / "DOGMA.md"
+    default_dogma.write_text("## Principi globali\n\nRoot rules", encoding="utf-8")
+    relative_dogma = relative_dir / "DOGMA.md"
+    relative_dogma.write_text("## Principi globali\n\nRelative rules", encoding="utf-8")
+    monkeypatch.setattr(dogma_module, "_default_dogma_path", lambda: default_dogma)
+    bundle = get_dogma_bundle_for_settings("config/DOGMA.md")
+    assert "Relative rules" in bundle.body(H2_GLOBAL)
+
+
+def test_settings_path_missing_and_no_default_raises_clear_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.core import dogma as dogma_module
+    from app.core.dogma import get_dogma_bundle_for_settings
+
+    invalidate_dogma_cache()
+    missing_default = tmp_path / "DOGMA.md"
+    monkeypatch.setattr(dogma_module, "_default_dogma_path", lambda: missing_default)
+    with pytest.raises(FileNotFoundError) as exc_info:
+        get_dogma_bundle_for_settings("/DOGMA.md")
+    msg = str(exc_info.value)
+    assert "Path configurato" in msg
+    assert "Fallback predefinito" in msg

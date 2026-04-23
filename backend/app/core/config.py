@@ -103,7 +103,7 @@ class Settings(BaseSettings):
 
     dogma_md_path: str = Field(
         default="",
-        description="Path assoluto a DOGMA.md; vuoto = percorso predefinito (root repo accanto a backend/).",
+        description="Path a DOGMA.md (assoluto o relativo alla root repo); vuoto = percorso predefinito in root repo.",
     )
 
     @computed_field  # type: ignore[prop-decorator]
