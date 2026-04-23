@@ -123,3 +123,8 @@ cd frontend && npm install && npm run lint && npm run build
 - Implementare i servizi di dominio (`amazon_url_service`, `keyword_service`, …) come moduli dedicati con route sottili.
 - Aggiungere test (pytest / Vitest) e CI.
 - Configurare deploy su Railway (variabili `DATABASE_URL`, build frontend/backend).
+
+## Note di deploy
+
+I deploy su Railway vengono avviati automaticamente dopo un push Git sul branch collegato al servizio.
+Le variabili d'ambiente devono essere configurate nel servizio backend su Railway prima del deploy.
