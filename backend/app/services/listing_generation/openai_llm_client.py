@@ -44,14 +44,25 @@ class OpenAIListingLLMClient:
         try:
             chat = client.chat
             completions = chat.completions
-            completion = completions.create(
-                model=model,
-                messages=[
+            payload = {
+                "model": model,
+                "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                max_completion_tokens=max_output_tokens,
-            )
+            }
+            try:
+                completion = completions.create(
+                    **payload,
+                    max_completion_tokens=max_output_tokens,
+                )
+            except TypeError as exc:
+                # Compatibilita' con versioni/clienti che espongono ancora solo `max_tokens`.
+                logger.info("Fallback max_completion_tokens -> max_tokens: %s", exc)
+                completion = completions.create(
+                    **payload,
+                    max_tokens=max_output_tokens,
+                )
         except APITimeoutError as exc:
             logger.warning("Timeout OpenAI listing: %s", exc)
             raise AnalysisPipelineError(
@@ -68,6 +79,13 @@ class OpenAIListingLLMClient:
                     http_status=429,
                     details=str(exc),
                 ) from exc
+            raise AnalysisPipelineError(
+                "OPENAI_REQUEST_FAILED",
+                http_status=502,
+                details=str(exc),
+            ) from exc
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Errore imprevisto OpenAI listing")
             raise AnalysisPipelineError(
                 "OPENAI_REQUEST_FAILED",
                 http_status=502,

@@ -107,7 +107,12 @@ export const DEFAULT_BRAND = "Meridiana";
 
 function parsePipelineError(detail: unknown): PipelineErrorDetail | null {
   if (!detail || typeof detail !== "object" || Array.isArray(detail)) return null;
-  const d = detail as Record<string, unknown>;
+  const root = detail as Record<string, unknown>;
+  const wrapped = root.detail;
+  const d =
+    wrapped && typeof wrapped === "object" && !Array.isArray(wrapped)
+      ? (wrapped as Record<string, unknown>)
+      : root;
   const code = d.error_code;
   const msg = d.message_it;
   if (typeof code !== "string" || typeof msg !== "string") return null;
