@@ -289,6 +289,9 @@ export const it = {
     strategyPanelTitle: "Strategia prodotto confermata",
     strategyPanelHint:
       "Questi dati alimentano i prompt (brief Fase 1 + arricchimento Fase 2 assemblati). Puoi ritoccarli qui prima di generare.",
+    recapToggleShow: "Mostra riepilogo dati",
+    recapToggleHide: "Nascondi riepilogo dati",
+    recapHint: "Apri il riepilogo solo se devi rivedere o correggere i dati di base prima della generazione.",
     readinessTitle: "Checklist copy (DOGMA)",
     readinessIntro: "Prima di generare, verifica questi punti per risultati più solidi.",
     readinessNomeOk: "Nome prodotto presente",

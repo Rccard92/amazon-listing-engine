@@ -185,18 +185,13 @@ function EnrichmentInner() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button type="button" onClick={() => void saveEnrichment()} disabled={saving}>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <Button type="button" variant="secondary" onClick={() => void saveEnrichment()} disabled={saving}>
                 {saving ? it.common.loading : m.saveEnrichment}
               </Button>
-              {saveHint ? <span className="self-center text-xs text-slate-500">{saveHint}</span> : null}
-              <Button type="button" variant="secondary" asChild>
+              {saveHint ? <span className="text-xs text-slate-500 sm:order-last sm:ml-2">{saveHint}</span> : null}
+              <Button type="button" asChild>
                 <Link href={`/listing-generazione?workItemId=${workItemId}`}>{m.goGenerate}</Link>
-              </Button>
-              <Button type="button" variant="ghost" asChild>
-                <Link href={workItemId ? `/new-listing?workItemId=${workItemId}` : "/new-listing"}>
-                  {it.nav.newListing}
-                </Link>
               </Button>
             </div>
           </section>

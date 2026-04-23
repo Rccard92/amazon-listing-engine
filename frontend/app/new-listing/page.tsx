@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { MoveToProjectPopover } from "@/components/projects/move-to-project-popover";
@@ -306,20 +305,6 @@ function NewListingPageInner() {
               onChange={(e) => setBrief({ ...brief, riassunto_ai_recensioni: e.target.value || null })}
             />
           </FormField>
-          <FormField label={b.lineeGuida.label} hint={b.lineeGuida.hint}>
-            <Textarea
-              rows={3}
-              value={brief.linee_guida_brand ?? ""}
-              onChange={(e) => setBrief({ ...brief, linee_guida_brand: e.target.value || null })}
-            />
-          </FormField>
-          <FormField label={b.noteUtente.label} hint={b.noteUtente.hint}>
-            <Textarea
-              rows={2}
-              value={brief.note_utente ?? ""}
-              onChange={(e) => setBrief({ ...brief, note_utente: e.target.value || null })}
-            />
-          </FormField>
         </div>
       </StepSection>
 
@@ -362,11 +347,6 @@ function NewListingPageInner() {
           {it.common.saveDraft}
         </Button>
         {workItemId ? <MoveToProjectPopover workItemId={workItemId} compact /> : null}
-        {workItemId ? (
-          <Button type="button" variant="secondary" asChild>
-            <Link href={`/arricchimento-strategico?workItemId=${workItemId}`}>{b.goEnrich}</Link>
-          </Button>
-        ) : null}
         <Button type="button" onClick={() => void persist("in_progress")} disabled={!isReady}>
           {it.common.continue}
         </Button>

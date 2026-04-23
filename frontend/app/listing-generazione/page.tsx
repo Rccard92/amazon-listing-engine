@@ -55,6 +55,7 @@ function ListingGenerazioneContent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveHint, setSaveHint] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [recapOpen, setRecapOpen] = useState(false);
 
   const [activeSection, setActiveSection] = useState<ListingSectionType>("seo_title");
 
@@ -259,41 +260,49 @@ function ListingGenerazioneContent() {
         {loadError ? <p className="mt-3 text-sm text-amber-800">{loadError}</p> : null}
       </header>
 
-      {strategy.nome_prodotto.trim() ? (
-        <section
-          className="surface-card rounded-4xl border border-slate-200/80 p-6 sm:p-8"
-          aria-label={p.readinessTitle}
-        >
-          <h2 className="text-sm font-semibold text-slate-900">{p.readinessTitle}</h2>
-          <p className="mt-1 text-xs text-slate-600">{p.readinessIntro}</p>
-          <ul className="mt-4 space-y-2 text-sm">
-            <li className={strategy.nome_prodotto.trim() ? "text-emerald-800" : "text-amber-800"}>
-              {strategy.nome_prodotto.trim() ? `✓ ${p.readinessNomeOk}` : `· ${p.readinessNomeKo}`}
-            </li>
-            <li className={strategy.keyword_primarie.length ? "text-emerald-800" : "text-amber-800"}>
-              {strategy.keyword_primarie.length ? `✓ ${p.readinessKwOk}` : `· ${p.readinessKwKo}`}
-            </li>
-            <li
-              className={
-                strategy.benefici_principali.length || (strategy.usp_differenziazione || "").trim()
-                  ? "text-emerald-800"
-                  : "text-amber-800"
-              }
-            >
-              {strategy.benefici_principali.length || (strategy.usp_differenziazione || "").trim()
-                ? `✓ ${p.readinessBenefitOk}`
-                : `· ${p.readinessBenefitKo}`}
-            </li>
-          </ul>
-        </section>
-      ) : null}
-
-      <section className="surface-card rounded-4xl p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">{p.strategyPanelTitle}</h2>
-        <p className="mt-1 text-sm text-slate-600">{p.strategyPanelHint}</p>
-        <div className="mt-6">
-          <StrategySummaryPanel strategy={strategy} onChange={setStrategy} />
+      <section className="surface-card rounded-4xl border border-slate-200/80 p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">{p.strategyPanelTitle}</p>
+            <p className="mt-1 text-xs text-slate-600">{p.recapHint}</p>
+          </div>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setRecapOpen((v) => !v)}>
+            {recapOpen ? p.recapToggleHide : p.recapToggleShow}
+          </Button>
         </div>
+        {recapOpen ? (
+          <div className="mt-4 space-y-4 rounded-2xl border border-slate-200/80 bg-white/90 p-4">
+            <section aria-label={p.readinessTitle}>
+              <h2 className="text-sm font-semibold text-slate-900">{p.readinessTitle}</h2>
+              <p className="mt-1 text-xs text-slate-600">{p.readinessIntro}</p>
+              <ul className="mt-3 space-y-2 text-sm">
+                <li className={strategy.nome_prodotto.trim() ? "text-emerald-800" : "text-amber-800"}>
+                  {strategy.nome_prodotto.trim() ? `✓ ${p.readinessNomeOk}` : `· ${p.readinessNomeKo}`}
+                </li>
+                <li className={strategy.keyword_primarie.length ? "text-emerald-800" : "text-amber-800"}>
+                  {strategy.keyword_primarie.length ? `✓ ${p.readinessKwOk}` : `· ${p.readinessKwKo}`}
+                </li>
+                <li
+                  className={
+                    strategy.benefici_principali.length || (strategy.usp_differenziazione || "").trim()
+                      ? "text-emerald-800"
+                      : "text-amber-800"
+                  }
+                >
+                  {strategy.benefici_principali.length || (strategy.usp_differenziazione || "").trim()
+                    ? `✓ ${p.readinessBenefitOk}`
+                    : `· ${p.readinessBenefitKo}`}
+                </li>
+              </ul>
+            </section>
+            <section>
+              <p className="text-sm font-semibold text-slate-900">{p.strategyPanelHint}</p>
+              <div className="mt-3">
+                <StrategySummaryPanel strategy={strategy} onChange={setStrategy} />
+              </div>
+            </section>
+          </div>
+        ) : null}
       </section>
 
       <section className="surface-card rounded-4xl p-6 sm:p-8">
