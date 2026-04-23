@@ -13,7 +13,7 @@ Legacy flows that **ingest or analyze Amazon product URLs** (fetch, parse, compe
 - Backend: set `ENABLE_URL_INGESTION=true` to mount routers that expose `POST /api/v1/amazon/analyze` and `POST /api/v1/workflows/create-from-similar`. When disabled, those paths are **not registered** (clients see **404**, not a dedicated “disabled” JSON error).
 - Frontend: `/competitor` and `/improve` **redirect to `/new-listing`** (MVP manuale-first); there is no separate UI flag for URL workflows in the current MVP shell.
 
-Persisted **Fase 1** brief: `input_data.product_brief` (`PRODUCT_BRIEF_KEY`). **Fase 2** enrichment: `input_data.strategic_enrichment`. La strategia per la generazione è assemblata da questi due blocchi. Legacy: `input_data.manual_product_strategy` (`MANUAL_PRODUCT_STRATEGY_KEY`) se il brief nuovo non c’è. Regole copy centrali in root `DOGMA.md`, caricate da `app.core.dogma`.
+Persisted **Fase 1** brief: `input_data.product_brief` (`PRODUCT_BRIEF_KEY`). **Fase 2** enrichment: `input_data.strategic_enrichment`. La strategia per la generazione è assemblata da questi due blocchi. Legacy: `input_data.manual_product_strategy` (`MANUAL_PRODUCT_STRATEGY_KEY`) se il brief nuovo non c’è. Regole copy operative per i prompt: **`backend/DOGMA.md`** (sezioni `##` parse da `app.core.dogma`; default). Copia di riferimento / specifica estesa: `DOGMA.md` in root. Override path: `DOGMA_MD_PATH`.
 
 ### Historical use cases (still valid as product vision, not all MVP-primary)
 1. Generate a new Amazon listing from structured product inputs. **(MVP primary)**

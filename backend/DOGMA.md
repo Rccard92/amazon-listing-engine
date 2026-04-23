@@ -11,6 +11,13 @@ Documento di prodotto: definisce vincoli editoriali, SEO e conversione per tutte
 - **MUST**: Italiano del marketplace Amazon Italia; evitare calchi dall’inglese innaturali salvo termini tecnici accettati.
 - **SHOULD**: Coerenza tra titolo, bullet e descrizione (stessi fatti, nessuna contraddizione).
 
+### GLOSSARIO_STRATEGIA
+
+- Nel prompt LLM i campi sono quelli di **`ConfirmedProductStrategy`** (Fase 1 `ProductBrief` + Fase 2 `StrategicEnrichment` assemblati dal backend).
+- **`caratteristiche_tecniche`**: merge di `caratteristiche_specifiche` e righe testuali da `dettagli_articolo` / `dettagli_aggiuntivi` del brief.
+- **`insight_recensioni_clienti`**: proviene da `riassunto_ai_recensioni` nel brief (solo claim supportati dal testo).
+- **`linee_guida_brand`**: blocco composito (brand, `linee_guida_brand`, `note_utente`, estratti di `descrizione_attuale` / `bullet_attuali`); vincoli brand e copy legacy di riferimento, non testo da copiare pari pari.
+
 ## Tono e registri
 
 In base a `livello_prezzo` (entry / mid / premium / unknown):
@@ -41,6 +48,28 @@ In base a `livello_prezzo` (entry / mid / premium / unknown):
 - **SHOULD**: Struttura informativa: cosa è + differenziatore chiave + attributo rilevante (misura, materiale, uso) quando applicabile.
 - **MUST NOT**: Tutolo “clickbait” non supportato dai dati prodotto.
 
+### INPUT_OBBLIGATORI
+
+- `nome_prodotto`
+- `keyword_primarie` (almeno una, uso naturale)
+- `livello_prezzo`
+
+### INPUT_OPZIONALI
+
+- `categoria`
+- `caratteristiche_tecniche`
+- `usp_differenziazione`
+- `keyword_secondarie`
+- `linee_guida_brand` (brand / vincoli)
+
+### INPUT_MODERAZIONE
+
+- `benefici_principali`: non trasformare in slogan né elenco nel titolo
+- `angolo_emotivo`: non forzare nel titolo
+- `insight_recensioni_clienti`: nessun claim non esplicitato nei dati
+- `keyword_secondarie`: max integrazione se resta leggibile
+- Ripetizione della stessa keyword: evitare
+
 ## Bullet point
 
 - **MUST**: Esattamente **5** bullet per richiesta generazione standard.
@@ -49,12 +78,51 @@ In base a `livello_prezzo` (entry / mid / premium / unknown):
 - **SHOULD**: Lunghezza moderata (frase o due); prima persona del brand solo se coerente con `linee_guida_brand`.
 - **MUST NOT**: Allusioni a recensioni false o punteggi inventati.
 
+### INPUT_OBBLIGATORI
+
+- `nome_prodotto`
+- Almeno uno tra `caratteristiche_tecniche` e `benefici_principali` (contenuto concreto per 5 bullet distinti)
+
+### INPUT_OPZIONALI
+
+- `usp_differenziazione`
+- `gestione_obiezioni`
+- `target_cliente`
+- `insight_recensioni_clienti`
+- `keyword_primarie`, `keyword_secondarie`
+- `categoria`, `livello_prezzo`
+- `linee_guida_brand`
+
+### INPUT_MODERAZIONE
+
+- `keyword_primarie` / `keyword_secondarie`: solo se naturali, no elenco keyword
+- `angolo_emotivo`: leggero, mai teatrale
+- `insight_recensioni_clienti`: niente punteggi o promesse inventate
+
 ## Descrizione
 
 - **MUST**: Testo lungo in paragrafi (3–5 paragrafi brevi); niente elenco numerato tipo bullet nella descrizione.
 - **MUST**: Integrare USP, target, gestione obiezioni quando presenti in strategia; non contraddire i bullet.
 - **MUST NOT**: Keyword stuffing; copia-incolla del titolo ripetuto all’infinito.
 - **SHOULD**: Rispettare range min/max caratteri indicato dal sistema; chiusura che rinforzi fiducia (senza CTA aggressiva).
+
+### INPUT_OBBLIGATORI
+
+- `nome_prodotto`
+
+### INPUT_OPZIONALI
+
+- `benefici_principali`, `usp_differenziazione`, `target_cliente`, `gestione_obiezioni`
+- `caratteristiche_tecniche`
+- `keyword_primarie`, `keyword_secondarie`
+- `livello_prezzo`, `categoria`
+- `insight_recensioni_clienti`
+
+### INPUT_MODERAZIONE
+
+- `angolo_emotivo`: supporto minimo, subordinato a chiarezza
+- `keyword_primarie` / `keyword_secondarie`: no stuffing; non duplicare titolo/bullet pari pari
+- `linee_guida_brand`: copy legacy solo come riferimento, non copia-incolla
 
 ## Keyword strategy (search terms)
 
@@ -63,6 +131,25 @@ In base a `livello_prezzo` (entry / mid / premium / unknown):
 - **MUST NOT**: Ripetere lo stesso lemma inutilmente; varianti solo se aggiungono intento distinto.
 - **MUST NOT**: Termini promozionali, claim generici assoluti, riferimenti a minori o categorie sensibili non pertinenti.
 - **SHOULD**: Copertura semantica: sinonimi leciti, usi, compatibilità, materiale, senza ridondanza.
+
+### INPUT_OBBLIGATORI
+
+- `nome_prodotto`
+- `keyword_primarie` (base semantica; non ripetere inutilmente nel backend)
+
+### INPUT_OPZIONALI
+
+- `categoria`
+- `caratteristiche_tecniche` (materiali, uso, compatibilità come termini)
+- `benefici_principali`, `target_cliente` (intent e casi d’uso come parole, non frasi promozionali)
+- `keyword_secondarie`
+- `insight_recensioni_clienti` (solo termini fattuali presenti nel testo)
+
+### INPUT_MODERAZIONE
+
+- `usp_differenziazione`: no aggettivi marketing / claim generici nel backend
+- `linee_guida_brand`: no brand name né slug promozionali; no spillare slogan
+- Ripetizioni e sinonimi vuoti: evitare spreco di byte
 
 ## Checklist copy readiness
 
