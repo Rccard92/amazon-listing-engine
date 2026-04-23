@@ -22,11 +22,11 @@ def test_parse_dogma_markdown_simple() -> None:
     assert s["Sezione B"] == "bar"
 
 
-def test_load_dogma_from_repo_root() -> None:
+def test_load_dogma_from_backend_root() -> None:
     invalidate_dogma_cache()
     here = Path(__file__).resolve()
-    repo_root = here.parents[3]
-    dogma_path = repo_root / "DOGMA.md"
+    backend_root = here.parents[2]
+    dogma_path = backend_root / "DOGMA.md"
     assert dogma_path.is_file(), f"manca DOGMA.md in {dogma_path}"
     bundle = load_dogma_bundle(dogma_path)
     assert H2_GLOBAL in bundle.sections
@@ -37,7 +37,7 @@ def test_load_dogma_from_repo_root() -> None:
 def test_build_system_addon_contains_section() -> None:
     invalidate_dogma_cache()
     here = Path(__file__).resolve()
-    bundle = load_dogma_bundle(here.parents[3] / "DOGMA.md")
+    bundle = load_dogma_bundle(here.parents[2] / "DOGMA.md")
     addon = build_system_addon_for_section(bundle, "seo_title")
     assert "DOGMA" in addon
     assert "Principi globali" in addon or "MUST" in addon
@@ -46,28 +46,31 @@ def test_build_system_addon_contains_section() -> None:
     assert "5" in addon_b or "bullet" in addon_b.lower()
 
 
-def test_default_path_points_to_repo_dogma() -> None:
+def test_default_path_points_to_backend_dogma() -> None:
     from app.core.dogma import _default_dogma_path
 
     p = _default_dogma_path()
     assert p.name == "DOGMA.md"
-    assert p.parent.name != "backend"  # root è parent di backend
+    assert p.parent.name == "backend"
     assert p.is_file()
 
 
-def test_settings_path_missing_absolute_falls_back_to_repo_root(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_settings_path_missing_absolute_raises_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.core import dogma as dogma_module
     from app.core.dogma import get_dogma_bundle_for_settings
 
     invalidate_dogma_cache()
     here = Path(__file__).resolve()
-    repo_dogma = (here.parents[3] / "DOGMA.md").resolve()
-    monkeypatch.setattr(dogma_module, "_default_dogma_path", lambda: repo_dogma)
-    bundle = get_dogma_bundle_for_settings("/DOGMA.md")
-    assert H2_GLOBAL in bundle.sections
+    backend_dogma = (here.parents[2] / "DOGMA.md").resolve()
+    monkeypatch.setattr(dogma_module, "_default_dogma_path", lambda: backend_dogma)
+    with pytest.raises(FileNotFoundError) as exc_info:
+        get_dogma_bundle_for_settings("/DOGMA.md")
+    msg = str(exc_info.value)
+    assert "Path configurato" in msg
+    assert "Path predefinito backend" in msg
 
 
-def test_settings_relative_path_resolved_from_repo_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_settings_relative_path_resolved_from_backend_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from app.core import dogma as dogma_module
     from app.core.dogma import get_dogma_bundle_for_settings
 
@@ -95,4 +98,4 @@ def test_settings_path_missing_and_no_default_raises_clear_error(tmp_path: Path,
         get_dogma_bundle_for_settings("/DOGMA.md")
     msg = str(exc_info.value)
     assert "Path configurato" in msg
-    assert "Fallback predefinito" in msg
+    assert "Path predefinito backend" in msg

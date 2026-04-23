@@ -32,20 +32,23 @@ class DogmaBundle:
 
 
 def _default_dogma_path() -> Path:
-    """Repo root: .../backend/app/core/dogma.py -> parents[3] = monorepo root."""
+    """Backend root: .../backend/app/core/dogma.py -> parents[2] = backend/."""
     here = Path(__file__).resolve()
-    return here.parents[3] / "DOGMA.md"
+    return here.parents[2] / "DOGMA.md"
 
 
 def _resolve_dogma_path(raw_path: str | None = None) -> Path:
-    """Risoluzione robusta path DOGMA: vuoto/relativo/assoluto con fallback su root repo."""
+    """Risoluzione path DOGMA con root backend e messaggi espliciti."""
     default_path = _default_dogma_path().resolve()
     value = (raw_path or "").strip()
 
     if not value:
         if default_path.is_file():
             return default_path
-        raise FileNotFoundError(f"DOGMA.md non trovato nel percorso predefinito: '{default_path}'.")
+        raise FileNotFoundError(
+            "DOGMA.md non trovato nel percorso predefinito del servizio backend: "
+            f"'{default_path}'. Posiziona il file in 'backend/DOGMA.md' oppure imposta DOGMA_MD_PATH."
+        )
 
     configured = Path(value)
     if configured.is_absolute():
@@ -55,12 +58,12 @@ def _resolve_dogma_path(raw_path: str | None = None) -> Path:
 
     if candidate.is_file():
         return candidate
-    if default_path.is_file():
+    if not configured.is_absolute() and default_path.is_file():
         return default_path
     raise FileNotFoundError(
         "DOGMA.md non trovato. "
         f"Path configurato: '{candidate}'. "
-        f"Fallback predefinito: '{default_path}'."
+        f"Path predefinito backend: '{default_path}'."
     )
 
 
@@ -100,7 +103,7 @@ def get_dogma_bundle(path: Path | None = None) -> DogmaBundle:
 
 
 def get_dogma_bundle_for_settings(dogma_md_path: str) -> DogmaBundle:
-    """Risolve il path da Settings.dogma_md_path (vuoto = default repo root)."""
+    """Risolve il path da Settings.dogma_md_path (vuoto = default backend root)."""
     p = _resolve_dogma_path(dogma_md_path)
     return _cached_bundle(str(p))
 
