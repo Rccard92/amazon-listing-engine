@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { MoveToProjectPopover } from "@/components/projects/move-to-project-popover";
 import { FormField } from "@/components/workflow/form-field";
@@ -51,6 +52,7 @@ function PhaseStrip() {
 }
 
 function NewListingPageInner() {
+  const router = useRouter();
   const [brief, setBrief] = useState<ProductBrief>(() => emptyProductBrief());
   const [kwPrimaryText, setKwPrimaryText] = useState("");
   const [kwSecondaryText, setKwSecondaryText] = useState("");
@@ -157,6 +159,15 @@ function NewListingPageInner() {
       status,
     });
     setLastSavedAt(new Date().toLocaleTimeString("it-IT"));
+  }
+
+  async function handleContinue() {
+    if (!briefForSave.nome_prodotto.trim()) {
+      return;
+    }
+    await persist("in_progress");
+    if (!workItemId) return;
+    router.push(`/arricchimento-strategico?workItemId=${workItemId}`);
   }
 
   function setBullet(i: number, value: string) {
@@ -347,7 +358,11 @@ function NewListingPageInner() {
           {it.common.saveDraft}
         </Button>
         {workItemId ? <MoveToProjectPopover workItemId={workItemId} compact /> : null}
-        <Button type="button" onClick={() => void persist("in_progress")} disabled={!isReady}>
+        <Button
+          type="button"
+          onClick={() => void handleContinue()}
+          disabled={!isReady || !briefForSave.nome_prodotto.trim()}
+        >
           {it.common.continue}
         </Button>
       </div>

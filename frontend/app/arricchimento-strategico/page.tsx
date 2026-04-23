@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +19,7 @@ import { getWorkItem, updateWorkItem } from "@/lib/work-items";
 const m = it.manualWorkflow;
 
 function EnrichmentInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const workItemId = searchParams.get("workItemId");
 
@@ -78,7 +78,7 @@ function EnrichmentInner() {
     setEnrichment(res.enrichment);
   }
 
-  async function saveEnrichment() {
+  async function saveEnrichment(nextStatus?: "draft" | "in_progress" | "completed") {
     if (!workItemId) return;
     setSaving(true);
     setSaveHint(null);
@@ -88,9 +88,15 @@ function EnrichmentInner() {
       return;
     }
     const input = { ...(item.input_data as Record<string, unknown>), [STRATEGIC_ENRICHMENT_KEY]: enrichment };
-    await updateWorkItem(workItemId, { input_data: input });
+    await updateWorkItem(workItemId, { input_data: input, ...(nextStatus ? { status: nextStatus } : {}) });
     setSaving(false);
     setSaveHint(m.savedEnrichment);
+  }
+
+  async function handleGoGenerate() {
+    if (!workItemId) return;
+    await saveEnrichment("in_progress");
+    router.push(`/listing-generazione?workItemId=${workItemId}`);
   }
 
   function setBeneficiText(t: string) {
@@ -190,8 +196,8 @@ function EnrichmentInner() {
                 {saving ? it.common.loading : m.saveEnrichment}
               </Button>
               {saveHint ? <span className="text-xs text-slate-500 sm:order-last sm:ml-2">{saveHint}</span> : null}
-              <Button type="button" asChild>
-                <Link href={`/listing-generazione?workItemId=${workItemId}`}>{m.goGenerate}</Link>
+              <Button type="button" onClick={() => void handleGoGenerate()} disabled={saving}>
+                {m.goGenerate}
               </Button>
             </div>
           </section>
