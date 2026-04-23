@@ -15,13 +15,20 @@ type Props = {
   section: ListingSectionType;
   strategy: ConfirmedProductStrategy;
   text: string;
-  bulletsText: string;
+  bullets: string[];
   onTextChange: (v: string) => void;
-  onBulletsChange: (v: string) => void;
+  onBulletsChange: (v: string[]) => void;
   validation: ListingSectionResult["validation"] | null;
   onValidation: (v: ListingSectionResult["validation"] | null) => void;
   onGenerated: (result: ListingSectionResult) => void;
 };
+
+const BULLETS_COUNT = 5;
+
+function normalizeBullets(raw: string[] | null | undefined): string[] {
+  const src = Array.isArray(raw) ? raw : [];
+  return Array.from({ length: BULLETS_COUNT }, (_, i) => String(src[i] ?? ""));
+}
 
 function sectionGoal(section: ListingSectionType): string {
   return p.sections[section].goal;
@@ -35,7 +42,7 @@ export function SectionOutputPanel({
   section,
   strategy,
   text,
-  bulletsText,
+  bullets,
   onTextChange,
   onBulletsChange,
   validation,
@@ -44,6 +51,7 @@ export function SectionOutputPanel({
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   async function runGenerate() {
     if (!strategy.nome_prodotto.trim()) {
@@ -61,8 +69,8 @@ export function SectionOutputPanel({
     }
     onGenerated(res.data);
     onValidation(res.data.validation);
-    if (section === "bullet_points" && res.data.bullets?.length) {
-      onBulletsChange(res.data.bullets.join("\n"));
+    if (section === "bullet_points") {
+      onBulletsChange(normalizeBullets(res.data.bullets));
     } else if (section === "seo_title" && res.data.seo_title) {
       onTextChange(res.data.seo_title);
     } else if (section === "description" && res.data.description) {
@@ -72,14 +80,28 @@ export function SectionOutputPanel({
     }
   }
 
-  async function copyToClipboard() {
-    const payload = section === "bullet_points" ? bulletsText : text;
+  async function copyToClipboard(payload: string, feedbackKey: string) {
     if (!payload.trim()) return;
     try {
       await navigator.clipboard.writeText(payload);
+      setCopyFeedback(feedbackKey);
+      setTimeout(() => setCopyFeedback((prev) => (prev === feedbackKey ? null : prev)), 1400);
     } catch {
       setError("Copia negata dal browser.");
     }
+  }
+
+  function updateBullet(index: number, value: string) {
+    const next = normalizeBullets(bullets);
+    next[index] = value;
+    onBulletsChange(next);
+  }
+
+  function allBulletsText(): string {
+    return normalizeBullets(bullets)
+      .map((b) => b.trim())
+      .filter(Boolean)
+      .join("\n");
   }
 
   return (
@@ -95,9 +117,15 @@ export function SectionOutputPanel({
         <Button type="button" size="sm" variant="secondary" onClick={() => void runGenerate()} disabled={loading}>
           {p.actions.regenerate}
         </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={() => void copyToClipboard()}>
-          {p.actions.copy}
-        </Button>
+        {section === "bullet_points" ? (
+          <Button type="button" size="sm" variant="ghost" onClick={() => void copyToClipboard(allBulletsText(), "all")}>
+            {copyFeedback === "all" ? p.actions.copied : p.actions.copyAll}
+          </Button>
+        ) : (
+          <Button type="button" size="sm" variant="ghost" onClick={() => void copyToClipboard(text, "text")}>
+            {copyFeedback === "text" ? p.actions.copied : p.actions.copy}
+          </Button>
+        )}
       </div>
       {error ? (
         <div className="rounded-2xl border border-rose-200/80 bg-rose-50/80 px-4 py-3">
@@ -106,15 +134,33 @@ export function SectionOutputPanel({
         </div>
       ) : null}
       {section === "bullet_points" ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs font-medium text-slate-500">{p.editorHint}</p>
-          <Textarea
-            rows={10}
-            value={bulletsText}
-            onChange={(e) => onBulletsChange(e.target.value)}
-            className="rounded-2xl font-mono text-sm"
-            placeholder="Un bullet per riga (5 consigliati)"
-          />
+          {normalizeBullets(bullets).map((bullet, index) => (
+            <div key={index} className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-600">
+                  {p.bullets.itemLabel} {index + 1}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => void copyToClipboard(bullet, `bullet-${index}`)}
+                  className="h-7 px-2 text-xs"
+                >
+                  {copyFeedback === `bullet-${index}` ? p.actions.copied : p.actions.copy}
+                </Button>
+              </div>
+              <Textarea
+                rows={3}
+                value={bullet}
+                onChange={(e) => updateBullet(index, e.target.value)}
+                className="rounded-xl text-sm leading-relaxed"
+                placeholder={`${p.bullets.itemPlaceholder} ${index + 1}`}
+              />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="space-y-2">

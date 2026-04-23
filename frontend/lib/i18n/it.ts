@@ -340,8 +340,14 @@ export const it = {
       generate: "Genera questa sezione",
       regenerate: "Rigenera",
       copy: "Copia",
+      copyAll: "Copia tutti",
+      copied: "Copiato",
       saveOutput: "Salva output nella bozza",
       savedOutput: "Output salvato nella bozza",
+    },
+    bullets: {
+      itemLabel: "Bullet",
+      itemPlaceholder: "Scrivi il bullet",
     },
     generationErrorHint:
       "Generazione non riuscita. Controlla la connessione e riprova tra qualche secondo. Se il problema continua, salva la bozza e aggiorna la pagina.",

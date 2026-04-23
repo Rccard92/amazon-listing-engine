@@ -19,6 +19,12 @@ import { it } from "@/lib/i18n/it";
 import { getWorkItem, updateWorkItem } from "@/lib/work-items";
 
 const p = it.listingGeneration;
+const BULLETS_COUNT = 5;
+
+function normalizeBullets(raw: string[] | null | undefined): string[] {
+  const src = Array.isArray(raw) ? raw : [];
+  return Array.from({ length: BULLETS_COUNT }, (_, i) => String(src[i] ?? ""));
+}
 
 type SectionStored =
   | { seo_title?: string | null; validation?: ValidationReport | null; post_processing_applied?: string[]; updated_at?: string }
@@ -53,7 +59,7 @@ function ListingGenerazioneContent() {
   const [activeSection, setActiveSection] = useState<ListingSectionType>("seo_title");
 
   const [seoText, setSeoText] = useState("");
-  const [bulletsText, setBulletsText] = useState("");
+  const [bullets, setBullets] = useState<string[]>(() => normalizeBullets([]));
   const [descText, setDescText] = useState("");
   const [kwText, setKwText] = useState("");
 
@@ -81,7 +87,7 @@ function ListingGenerazioneContent() {
       if (stSeo?.seo_title) setSeoText(stSeo.seo_title);
       if (stSeo?.validation) setValSeo(stSeo.validation);
       const stBul = storedMap.bullet_points as { bullets?: string[] | null; validation?: ValidationReport | null } | undefined;
-      if (stBul?.bullets?.length) setBulletsText(stBul.bullets.join("\n"));
+      setBullets(normalizeBullets(stBul?.bullets));
       if (stBul?.validation) setValBullets(stBul.validation);
       const stDesc = storedMap.description as { description?: string | null; validation?: ValidationReport | null } | undefined;
       if (stDesc?.description) setDescText(stDesc.description);
@@ -124,8 +130,9 @@ function ListingGenerazioneContent() {
           updated_at: now,
         };
       } else if (section === "bullet_points") {
+        const normalized = normalizeBullets(result.bullets);
         sections.bullet_points = {
-          bullets: result.bullets,
+          bullets: normalized,
           validation: result.validation,
           post_processing_applied: result.post_processing_applied,
           updated_at: now,
@@ -177,14 +184,10 @@ function ListingGenerazioneContent() {
         : {};
     const sections = { ...(lg.sections || {}) };
     const now = new Date().toISOString();
-    const bulletLines = bulletsText
-      .split(/\r?\n/)
-      .map((x) => x.trim())
-      .filter(Boolean);
     if (activeSection === "seo_title") {
       sections.seo_title = { seo_title: seoText, updated_at: now, validation: valSeo };
     } else if (activeSection === "bullet_points") {
-      sections.bullet_points = { bullets: bulletLines, updated_at: now, validation: valBullets };
+      sections.bullet_points = { bullets: normalizeBullets(bullets), updated_at: now, validation: valBullets };
     } else if (activeSection === "description") {
       sections.description = { description: descText, updated_at: now, validation: valDesc };
     } else {
@@ -202,9 +205,9 @@ function ListingGenerazioneContent() {
       ? {
           section: "seo_title" as const,
           text: seoText,
-          bulletsText,
+          bullets,
           onTextChange: setSeoText,
-          onBulletsChange: setBulletsText,
+          onBulletsChange: setBullets,
           validation: valSeo,
           onValidation: setValSeo,
           onGenerated: (res: ListingSectionResult) => onGenerated("seo_title", res),
@@ -213,9 +216,9 @@ function ListingGenerazioneContent() {
         ? {
             section: "bullet_points" as const,
             text: descText,
-            bulletsText,
+            bullets,
             onTextChange: setDescText,
-            onBulletsChange: setBulletsText,
+            onBulletsChange: setBullets,
             validation: valBullets,
             onValidation: setValBullets,
             onGenerated: (res: ListingSectionResult) => onGenerated("bullet_points", res),
@@ -224,9 +227,9 @@ function ListingGenerazioneContent() {
           ? {
               section: "description" as const,
               text: descText,
-              bulletsText,
+              bullets,
               onTextChange: setDescText,
-              onBulletsChange: setBulletsText,
+              onBulletsChange: setBullets,
               validation: valDesc,
               onValidation: setValDesc,
               onGenerated: (res: ListingSectionResult) => onGenerated("description", res),
@@ -234,9 +237,9 @@ function ListingGenerazioneContent() {
           : {
               section: "keyword_strategy" as const,
               text: kwText,
-              bulletsText,
+              bullets,
               onTextChange: setKwText,
-              onBulletsChange: setBulletsText,
+              onBulletsChange: setBullets,
               validation: valKw,
               onValidation: setValKw,
               onGenerated: (res: ListingSectionResult) => onGenerated("keyword_strategy", res),
