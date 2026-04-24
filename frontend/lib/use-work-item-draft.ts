@@ -4,9 +4,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  createWorkItem,
-  getWorkItem,
-  updateWorkItem,
+  createWorkItemResult,
+  getWorkItemResult,
+  updateWorkItemResult,
+  type ApiErrorDetail,
+  type ApiResult,
   type WorkItem,
   type WorkItemStatus,
   type WorkflowType,
@@ -32,6 +34,7 @@ export function useWorkItemDraft({
 
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [draftError, setDraftError] = useState<ApiErrorDetail | null>(null);
 
   const workItemId = idFromUrl ?? createdId;
 
@@ -43,7 +46,7 @@ export function useWorkItemDraft({
     setLoading(true);
 
     void (async () => {
-      const created = await createWorkItem({
+      const created = await createWorkItemResult({
         title: fallbackTitle,
         workflow_type: workflowType,
         status: "draft",
@@ -55,10 +58,13 @@ export function useWorkItemDraft({
         setLoading(false);
         return;
       }
-      const id = created?.id ?? null;
-      if (id) {
+      if (created.ok) {
+        const id = created.data.id;
         setCreatedId(id);
+        setDraftError(null);
         routerRef.current.replace(`${basePath}?workItemId=${encodeURIComponent(id)}`);
+      } else {
+        setDraftError(created.error);
       }
       setLoading(false);
     })();
@@ -89,7 +95,7 @@ export function useWorkItemDraft({
       status?: WorkItemStatus;
     }) => {
       if (!workItemId) return null;
-      return updateWorkItem(workItemId, {
+      return updateWorkItemResult(workItemId, {
         title: title || fallbackTitle,
         workflow_type: workflowType,
         status,
@@ -104,12 +110,12 @@ export function useWorkItemDraft({
     [fallbackTitle, workflowType, workItemId],
   );
 
-  const load = useCallback(async (): Promise<WorkItem | null> => {
+  const load = useCallback(async (): Promise<ApiResult<WorkItem> | null> => {
     if (!workItemId) return null;
-    return getWorkItem(workItemId);
+    return getWorkItemResult(workItemId);
   }, [workItemId]);
 
   const isReady = useMemo(() => Boolean(workItemId) && !loading, [workItemId, loading]);
 
-  return { workItemId, isReady, loading, save, load };
+  return { workItemId, isReady, loading, draftError, save, load };
 }

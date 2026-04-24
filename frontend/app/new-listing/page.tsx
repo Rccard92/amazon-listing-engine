@@ -21,7 +21,7 @@ import {
   type ProductBrief,
 } from "@/lib/listing-generation";
 import { useWorkItemDraft } from "@/lib/use-work-item-draft";
-import { getWorkItem } from "@/lib/work-items";
+import { getWorkItemResult } from "@/lib/work-items";
 
 const p = it.newListing;
 const b = p.brief;
@@ -59,20 +59,26 @@ function NewListingPageInner() {
   const [caratteristicheText, setCaratteristicheText] = useState("");
   const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const draft = useWorkItemDraft({
     workflowType: "new_listing",
     fallbackTitle: p.title,
     basePath: "/new-listing",
   });
-  const { isReady, load, save, workItemId } = draft;
+  const { isReady, load, save, workItemId, draftError } = draft;
 
   useEffect(() => {
     let cancelled = false;
     async function preload() {
       if (!isReady) return;
-      const item = await load();
-      if (!item || cancelled) return;
+      const loaded = await load();
+      if (!loaded || cancelled) return;
+      if (!loaded.ok) {
+        setActionError(`Impossibile caricare la bozza (${loaded.status}): ${loaded.error.message}`);
+        return;
+      }
+      const item = loaded.data;
       const input = item.input_data as Record<string, unknown>;
       const keyword = item.keyword_data as Record<string, unknown>;
       const pbRaw = input[PRODUCT_BRIEF_KEY];
@@ -136,12 +142,20 @@ function NewListingPageInner() {
     const bSave = briefForSave;
     const summary =
       [bSave.nome_prodotto, bSave.categoria].filter(Boolean).join(" • ") || "Bozza nuova scheda prodotto";
-    if (!workItemId) return;
-    const item = await getWorkItem(workItemId);
-    const prev = item?.input_data as Record<string, unknown> | undefined;
+    if (!workItemId) {
+      setActionError("Work item non disponibile. Attendi la creazione della bozza e riprova.");
+      return null;
+    }
+    const current = await getWorkItemResult(workItemId);
+    if (!current.ok) {
+      setActionError(`Impossibile leggere il work item (${current.status}): ${current.error.message}`);
+      return null;
+    }
+    const item = current.data;
+    const prev = item.input_data as Record<string, unknown> | undefined;
     const enrichment = prev?.[STRATEGIC_ENRICHMENT_KEY];
-    const existingOutput = (item?.generated_output as Record<string, unknown> | undefined) ?? {};
-    await save({
+    const existingOutput = (item.generated_output as Record<string, unknown> | undefined) ?? {};
+    const saved = await save({
       title: bSave.nome_prodotto || p.title,
       summary,
       inputData: {
@@ -158,15 +172,26 @@ function NewListingPageInner() {
       generatedOutput: existingOutput,
       status,
     });
+    if (!saved?.ok) {
+      setActionError(`Salvataggio non riuscito (${saved?.status ?? "?"}): ${saved?.error.message ?? "errore sconosciuto"}`);
+      return null;
+    }
+    const input = saved.data.input_data as Record<string, unknown>;
+    if (!input[PRODUCT_BRIEF_KEY] || typeof input[PRODUCT_BRIEF_KEY] !== "object" || Array.isArray(input[PRODUCT_BRIEF_KEY])) {
+      setActionError("Salvataggio incompleto: product_brief non presente nel work item.");
+      return null;
+    }
+    setActionError(null);
     setLastSavedAt(new Date().toLocaleTimeString("it-IT"));
+    return saved.data;
   }
 
   async function handleContinue() {
     if (!briefForSave.nome_prodotto.trim()) {
       return;
     }
-    await persist("in_progress");
-    if (!workItemId) return;
+    const saved = await persist("in_progress");
+    if (!saved || !workItemId) return;
     router.push(`/arricchimento-strategico?workItemId=${workItemId}`);
   }
 
@@ -350,6 +375,8 @@ function NewListingPageInner() {
       <div className="space-y-2 pb-6">
         {lastSavedAt ? <p className="text-xs text-slate-500">Salvato alle {lastSavedAt}</p> : null}
         {!isReady ? <p className="text-xs text-slate-500">Preparazione bozza in Cronologia...</p> : null}
+        {draftError ? <p className="text-xs text-red-700">Errore creazione bozza: {draftError.message}</p> : null}
+        {actionError ? <p className="text-xs text-red-700">{actionError}</p> : null}
         <p className="text-xs text-slate-500">{p.phases.afterSave}</p>
       </div>
 

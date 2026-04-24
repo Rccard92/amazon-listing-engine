@@ -14,7 +14,7 @@ import {
   STRATEGIC_ENRICHMENT_KEY,
   type StrategicEnrichment,
 } from "@/lib/listing-generation";
-import { getWorkItem, updateWorkItem } from "@/lib/work-items";
+import { getWorkItemResult, updateWorkItemResult } from "@/lib/work-items";
 
 const m = it.manualWorkflow;
 
@@ -38,11 +38,19 @@ function EnrichmentInner() {
         setLoadError("Parametro workItemId mancante.");
         return;
       }
-      const item = await getWorkItem(workItemId);
-      if (cancelled || !item) {
-        setLoadError("Elemento non trovato.");
+      const loaded = await getWorkItemResult(workItemId);
+      if (cancelled) return;
+      if (!loaded.ok) {
+        if (loaded.status === 404) {
+          setLoadError("Work item non trovato (404). Torna alla Fase 1 e crea una nuova bozza.");
+        } else if (loaded.status === 422) {
+          setLoadError("ID work item non valido (422). Apri di nuovo la Fase 1 dalla dashboard.");
+        } else {
+          setLoadError(`Errore caricamento work item (${loaded.status}): ${loaded.error.message}`);
+        }
         return;
       }
+      const item = loaded.data;
       const input = item.input_data as Record<string, unknown>;
       const pbRaw = input[PRODUCT_BRIEF_KEY];
       if (!pbRaw || typeof pbRaw !== "object" || Array.isArray(pbRaw)) {
@@ -82,14 +90,25 @@ function EnrichmentInner() {
     if (!workItemId) return;
     setSaving(true);
     setSaveHint(null);
-    const item = await getWorkItem(workItemId);
-    if (!item) {
+    const loaded = await getWorkItemResult(workItemId);
+    if (!loaded.ok) {
+      setAiError(`Impossibile salvare arricchimento (${loaded.status}): ${loaded.error.message}`);
       setSaving(false);
       return;
     }
+    const item = loaded.data;
     const input = { ...(item.input_data as Record<string, unknown>), [STRATEGIC_ENRICHMENT_KEY]: enrichment };
-    await updateWorkItem(workItemId, { input_data: input, ...(nextStatus ? { status: nextStatus } : {}) });
+    const updated = await updateWorkItemResult(workItemId, {
+      input_data: input,
+      ...(nextStatus ? { status: nextStatus } : {}),
+    });
+    if (!updated.ok) {
+      setAiError(`Salvataggio arricchimento fallito (${updated.status}): ${updated.error.message}`);
+      setSaving(false);
+      return;
+    }
     setSaving(false);
+    setAiError(null);
     setSaveHint(m.savedEnrichment);
   }
 
