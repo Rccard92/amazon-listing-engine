@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.keyword_planning import KeywordPlanning
+
 PriceTier = Literal["entry", "mid", "premium", "unknown"]
 
 
@@ -23,6 +25,7 @@ class ConfirmedProductStrategy(BaseModel):
     )
     keyword_primarie: list[str] = Field(default_factory=list)
     keyword_secondarie: list[str] = Field(default_factory=list)
+    keyword_planning: KeywordPlanning | None = None
     linee_guida_brand: str | None = None
     angolo_emotivo: str | None = None
     livello_prezzo: PriceTier = "unknown"

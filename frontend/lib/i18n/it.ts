@@ -77,7 +77,7 @@ export const it = {
           "Percorso principale del MVP: inserisci prodotto, benefici e parole chiave. Salva la bozza e passa alla generazione del copy.",
         badge: "Percorso principale",
         nextHint:
-          "Dopo il salvataggio: Fase 2 arricchimento strategico, poi Fase 3 generazione (titolo, bullet, descrizione, keyword backend).",
+          "Dopo il salvataggio: Fase 2 arricchimento strategico, Fase 3 keyword planning, poi Fase 4 generazione.",
         cta: "Inizia da input manuale",
       },
       {
@@ -207,9 +207,10 @@ export const it = {
     phases: {
       data: "Fase 1 · Dati prodotto",
       enrich: "Fase 2 · Arricchimento strategico",
-      generate: "Fase 3 · Generazione contenuti",
+      keywordPlan: "Fase 3 · Keyword planning",
+      generate: "Fase 4 · Generazione contenuti",
       phase1Active: "Stai compilando il brief strutturato (DOGMA-ready).",
-      afterSave: "Salva la bozza, poi passa all’arricchimento strategico prima della generazione del copy.",
+      afterSave: "Salva la bozza, poi passa all’arricchimento strategico e keyword planning prima della generazione del copy.",
     },
     brief: {
       identityTitle: "Identità e brand",
@@ -244,7 +245,7 @@ export const it = {
     suggestAiHint: "Usa il brief salvato nel work item (richiede API OpenAI sul server).",
     saveEnrichment: "Salva arricchimento",
     savedEnrichment: "Arricchimento salvato.",
-    goGenerate: "Vai alla generazione scheda",
+    goGenerate: "Vai al keyword planning",
     missingBrief: "Work item senza product_brief: torna alla Fase 1 e salva il modulo.",
     fields: {
       benefici: "Benefici principali",
@@ -254,6 +255,23 @@ export const it = {
       emotivo: "Angolo emotivo",
     },
     enrichHelp: "Un beneficio o obiezione per riga nelle liste.",
+  },
+  keywordPlanning: {
+    badge: "Fase 3 · Keyword planning",
+    title: "Keyword planning strategico",
+    subtitle:
+      "Definisci il piano keyword che guidera titolo, bullet e descrizione. I backend terms finali saranno generati dopo i contenuti frontend.",
+    suggest: "Suggerisci keyword planning con AI",
+    save: "Salva keyword planning",
+    saved: "Keyword planning salvato.",
+    goGenerate: "Vai alla generazione contenuti",
+    fields: {
+      primary: "Keyword primaria finale",
+      secondary: "Keyword secondarie prioritarie (una per riga)",
+      frontendPush: "Parole da spingere nel frontend (una per riga)",
+      backendKeep: "Parole da tenere per backend (una per riga)",
+      notes: "Note su keyword da non forzare (una per riga)",
+    },
   },
   history: {
     title: "Cronologia",
@@ -300,7 +318,7 @@ export const it = {
     readinessKwKo: "Aggiungi keyword primarie nel brief",
     readinessBenefitOk: "Benefici o USP presenti (dopo Fase 2)",
     readinessBenefitKo: "Completa l’arricchimento strategico o aggiungi USP/benefici qui",
-    phase3Badge: "Fase 3 · Generazione contenuti",
+    phase3Badge: "Fase 4 · Generazione contenuti",
     fields: {
       nome: "Nome prodotto",
       categoria: "Categoria",

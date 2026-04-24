@@ -181,7 +181,12 @@ class ListingGenerationOrchestratorService:
         max_b = rules.backend_search_terms_max_bytes or settings.listing_backend_search_terms_max_bytes
         rules_eff = rules.model_copy(update={"banned_phrases": merged_banned})
         system = build_keyword_strategy_system_prompt(dogma_addon=dogma_addon)
-        user = build_keyword_strategy_user_prompt(request.strategy, rules_eff, max_bytes=max_b)
+        user = build_keyword_strategy_user_prompt(
+            request.strategy,
+            rules_eff,
+            max_bytes=max_b,
+            generated_frontend_content=request.generated_frontend_content,
+        )
         raw = self.llm.generate_text(system_prompt=system, user_prompt=user, max_output_tokens=600)
         first_line = raw.splitlines()[0].strip() if raw.strip() else ""
         brand_tokens: list[str] = []

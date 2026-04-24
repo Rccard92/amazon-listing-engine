@@ -2,6 +2,7 @@
 
 from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy
 from app.schemas.listing_generation import InjectedRules
+from app.schemas.keyword_planning import GeneratedFrontendContent
 
 from app.services.listing_generation.prompts._context import format_rules_addon, format_strategy_for_prompt
 
@@ -23,13 +24,24 @@ def build_keyword_strategy_user_prompt(
     rules: InjectedRules | None,
     *,
     max_bytes: int,
+    generated_frontend_content: GeneratedFrontendContent | None = None,
 ) -> str:
     base = format_strategy_for_prompt(strategy)
     addon = format_rules_addon(rules, brand_fallback=strategy.linee_guida_brand)
+    frontend_block = ""
+    if generated_frontend_content is not None:
+        frontend_block = (
+            "\n\nContenuti frontend gia presenti (da non duplicare in modo sterile):\n"
+            f"- Titolo: {generated_frontend_content.seo_title or ''}\n"
+            f"- Bullet: {' | '.join(generated_frontend_content.bullets or [])}\n"
+            f"- Descrizione: {generated_frontend_content.description or ''}\n"
+        )
     return (
         f"{base}\n\n"
         f"Limite approssimativo: resta entro ~{max_bytes} byte UTF-8 (stringa più corta se necessario).\n"
-        f"{addon}\n\n"
+        f"{addon}\n"
+        f"{frontend_block}\n"
         "Non ripetere keyword identiche consecutive; rimuovi ridondanze. "
+        "Priorita: copri spazio semantico non ancora saturo nei contenuti frontend. "
         "Rispondi con una sola riga di termini separati da spazio."
     )

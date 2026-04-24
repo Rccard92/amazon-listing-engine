@@ -212,6 +212,7 @@ function ListingGenerazioneContent() {
           validation: valSeo,
           onValidation: setValSeo,
           onGenerated: (res: ListingSectionResult) => onGenerated("seo_title", res),
+          generatedFrontendContent: { seo_title: seoText, bullets: normalizeBullets(bullets), description: descText },
         }
       : activeSection === "bullet_points"
         ? {
@@ -223,6 +224,7 @@ function ListingGenerazioneContent() {
             validation: valBullets,
             onValidation: setValBullets,
             onGenerated: (res: ListingSectionResult) => onGenerated("bullet_points", res),
+            generatedFrontendContent: { seo_title: seoText, bullets: normalizeBullets(bullets), description: descText },
           }
         : activeSection === "description"
           ? {
@@ -234,6 +236,7 @@ function ListingGenerazioneContent() {
               validation: valDesc,
               onValidation: setValDesc,
               onGenerated: (res: ListingSectionResult) => onGenerated("description", res),
+              generatedFrontendContent: { seo_title: seoText, bullets: normalizeBullets(bullets), description: descText },
             }
           : {
               section: "keyword_strategy" as const,
@@ -244,6 +247,7 @@ function ListingGenerazioneContent() {
               validation: valKw,
               onValidation: setValKw,
               onGenerated: (res: ListingSectionResult) => onGenerated("keyword_strategy", res),
+              generatedFrontendContent: { seo_title: seoText, bullets: normalizeBullets(bullets), description: descText },
             };
 
   return (

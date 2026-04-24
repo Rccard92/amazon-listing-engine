@@ -3,7 +3,11 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import type { ListingSectionResult, ListingSectionType } from "@/lib/listing-generation";
+import type {
+  GeneratedFrontendContent,
+  ListingSectionResult,
+  ListingSectionType,
+} from "@/lib/listing-generation";
 import { generateListingSection, type ConfirmedProductStrategy } from "@/lib/listing-generation";
 import { it } from "@/lib/i18n/it";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +25,7 @@ type Props = {
   validation: ListingSectionResult["validation"] | null;
   onValidation: (v: ListingSectionResult["validation"] | null) => void;
   onGenerated: (result: ListingSectionResult) => void;
+  generatedFrontendContent?: GeneratedFrontendContent | null;
 };
 
 const BULLETS_COUNT = 5;
@@ -48,6 +53,7 @@ export function SectionOutputPanel({
   validation,
   onValidation,
   onGenerated,
+  generatedFrontendContent,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +66,12 @@ export function SectionOutputPanel({
     }
     setError(null);
     setLoading(true);
-    const res = await generateListingSection({ strategy, section, include_raw_model_text: false });
+    const res = await generateListingSection({
+      strategy,
+      section,
+      include_raw_model_text: false,
+      generated_frontend_content: section === "keyword_strategy" ? generatedFrontendContent ?? null : null,
+    });
     setLoading(false);
     if (!res.ok) {
       const msg = res.error ? errCat[res.error.error_code] ?? res.error.message_it : "Errore di rete.";

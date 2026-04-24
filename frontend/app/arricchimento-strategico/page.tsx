@@ -115,7 +115,7 @@ function EnrichmentInner() {
   async function handleGoGenerate() {
     if (!workItemId) return;
     await saveEnrichment("in_progress");
-    router.push(`/listing-generazione?workItemId=${workItemId}`);
+    router.push(`/keyword-planning?workItemId=${workItemId}`);
   }
 
   function setBeneficiText(t: string) {
@@ -138,6 +138,8 @@ function EnrichmentInner() {
           <span className="rounded-xl px-3 py-1.5">{it.newListing.phases.data}</span>
           <span className="text-slate-400">→</span>
           <span className="rounded-xl bg-white px-3 py-1.5 text-slate-900 shadow-sm">{it.newListing.phases.enrich}</span>
+          <span className="text-slate-400">→</span>
+          <span className="rounded-xl px-3 py-1.5">{it.newListing.phases.keywordPlan}</span>
           <span className="text-slate-400">→</span>
           <span className="rounded-xl px-3 py-1.5">{it.newListing.phases.generate}</span>
         </div>

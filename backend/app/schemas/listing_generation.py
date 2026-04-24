@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy
+from app.schemas.keyword_planning import GeneratedFrontendContent
 
 ListingSectionType = Literal["seo_title", "bullet_points", "description", "keyword_strategy"]
 
@@ -43,6 +44,7 @@ class GenerateListingSectionRequest(BaseModel):
     section: ListingSectionType
     rules: InjectedRules | None = None
     include_raw_model_text: bool = False
+    generated_frontend_content: GeneratedFrontendContent | None = None
 
 
 class ListingSectionResult(BaseModel):

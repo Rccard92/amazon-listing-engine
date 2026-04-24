@@ -43,9 +43,30 @@ export type ConfirmedProductStrategy = {
   insight_recensioni_clienti: string | null;
   keyword_primarie: string[];
   keyword_secondarie: string[];
+  keyword_planning?: KeywordPlanning | null;
   linee_guida_brand: string | null;
   angolo_emotivo: string | null;
   livello_prezzo: PriceTier;
+};
+
+export type SemanticCluster = {
+  name: string;
+  keywords: string[];
+};
+
+export type KeywordPlanning = {
+  keyword_primaria_finale: string;
+  keyword_secondarie_prioritarie: string[];
+  cluster_semantici: SemanticCluster[];
+  parole_da_spingere_nel_frontend: string[];
+  parole_da_tenere_per_backend: string[];
+  note_su_keyword_da_non_forzare: string[];
+};
+
+export type GeneratedFrontendContent = {
+  seo_title?: string | null;
+  bullets?: string[];
+  description?: string | null;
 };
 
 export type ValidationSeverity = "error" | "warning" | "info";
@@ -76,6 +97,7 @@ export type GenerateListingSectionRequest = {
   section: ListingSectionType;
   rules?: InjectedRules | null;
   include_raw_model_text?: boolean;
+  generated_frontend_content?: GeneratedFrontendContent | null;
 };
 
 export type ListingSectionResult = {
@@ -101,6 +123,7 @@ export type GenerateSectionResult =
 
 export const PRODUCT_BRIEF_KEY = "product_brief" as const;
 export const STRATEGIC_ENRICHMENT_KEY = "strategic_enrichment" as const;
+export const KEYWORD_PLANNING_KEY = "keyword_planning" as const;
 /** Legacy: strategia flat salvata prima del brief strutturato. */
 export const MANUAL_PRODUCT_STRATEGY_KEY = "manual_product_strategy" as const;
 export const DEFAULT_BRAND = "Meridiana";
@@ -135,6 +158,7 @@ export async function generateListingSection(
       section: payload.section,
       rules: payload.rules ?? null,
       include_raw_model_text: payload.include_raw_model_text ?? false,
+      generated_frontend_content: payload.generated_frontend_content ?? null,
     }),
   });
   const rawText = await res.text();
@@ -269,6 +293,27 @@ export async function getConfirmedStrategyFromWorkItem(workItemId: string): Prom
   return (await res.json()) as ConfirmedProductStrategy;
 }
 
+export async function requestKeywordPlanningForWorkItem(workItemId: string): Promise<
+  | { ok: true; planning: KeywordPlanning }
+  | { ok: false; status: number; error: PipelineErrorDetail | null }
+> {
+  const res = await fetch(buildApiUrl(`/api/v1/keyword-planning/plan-work-item/${workItemId}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  const rawText = await res.text();
+  let body: unknown = null;
+  try {
+    body = rawText ? JSON.parse(rawText) : null;
+  } catch {
+    body = null;
+  }
+  if (!res.ok) {
+    return { ok: false, status: res.status, error: parsePipelineError(body) };
+  }
+  return { ok: true, planning: body as KeywordPlanning };
+}
+
 export function emptyStrategy(): ConfirmedProductStrategy {
   return {
     nome_prodotto: "",
@@ -281,6 +326,7 @@ export function emptyStrategy(): ConfirmedProductStrategy {
     insight_recensioni_clienti: null,
     keyword_primarie: [],
     keyword_secondarie: [],
+    keyword_planning: null,
     linee_guida_brand: null,
     angolo_emotivo: null,
     livello_prezzo: "unknown",
