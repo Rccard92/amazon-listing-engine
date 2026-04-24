@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 
 from app.core.config import get_settings
@@ -44,17 +45,65 @@ from app.services.listing_generation.validation.keyword_strategy import validate
 from app.services.listing_generation.validation.title import validate_seo_title
 
 
+def _cleanup_bullet_line(line: str) -> str:
+    value = line.strip()
+    value = re.sub(r"^\s*(?:[-*•]\s+|\d+[\).]\s+)", "", value)
+    return value.strip()
+
+
+def _normalize_bullet_list(values: list[object], *, limit: int = 5) -> list[str]:
+    out: list[str] = []
+    for item in values:
+        v = _cleanup_bullet_line(str(item))
+        if v:
+            out.append(v)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _extract_json_like(text: str) -> str | None:
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    return text[start : end + 1]
+
+
 def _parse_bullets_json(raw: str) -> list[str]:
     text = raw.strip()
-    try:
-        data = json.loads(text)
-        arr = data.get("bullets") if isinstance(data, dict) else None
-        if isinstance(arr, list):
-            return [str(x).strip() for x in arr if str(x).strip()]
-    except json.JSONDecodeError:
-        pass
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    return lines
+    if not text:
+        return []
+
+    candidates = [text]
+    embedded = _extract_json_like(text)
+    if embedded and embedded != text:
+        candidates.append(embedded)
+
+    for candidate in candidates:
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(data, dict):
+            arr = data.get("bullets")
+            if isinstance(arr, list):
+                return _normalize_bullet_list(arr)
+            if isinstance(arr, str):
+                # Supporta JSON con bullets serializzato come stringa multilinea.
+                lines = [_cleanup_bullet_line(x) for x in arr.splitlines()]
+                parsed = [x for x in lines if x]
+                if parsed:
+                    return parsed[:5]
+        elif isinstance(data, list):
+            parsed = _normalize_bullet_list(data)
+            if parsed:
+                return parsed
+
+    # Fallback: split righe + rimozione prefissi elenco.
+    lines = [_cleanup_bullet_line(ln) for ln in text.splitlines()]
+    parsed = [ln for ln in lines if ln]
+    return parsed[:5]
 
 
 @dataclass
@@ -146,6 +195,13 @@ class ListingGenerationOrchestratorService:
         user = build_bullets_user_prompt(request.strategy, rules_eff)
         raw = self.llm.generate_text(system_prompt=system, user_prompt=user, max_output_tokens=900)
         parsed = _parse_bullets_json(raw)
+        if not parsed:
+            raise AnalysisPipelineError(
+                "AI_OUTPUT_INVALID",
+                http_status=502,
+                message_it="Formato bullet non valido: impossibile estrarre un array di bullet.",
+                details="Risposta modello non parseabile in bullets[]",
+            )
         bullets, applied_pp = post_process_bullets(parsed)
         report = validate_bullets(bullets, rules=rules_eff)
         return ListingSectionResult(

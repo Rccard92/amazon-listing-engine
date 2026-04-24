@@ -30,8 +30,34 @@ type Props = {
 
 const BULLETS_COUNT = 5;
 
+function splitSingleBlob(raw: string): string[] {
+  const text = raw.trim();
+  if (!text) return [];
+  const jsonLike = text.match(/\{[\s\S]*\}/)?.[0];
+  if (jsonLike) {
+    try {
+      const parsed = JSON.parse(jsonLike) as { bullets?: unknown };
+      if (Array.isArray(parsed.bullets)) {
+        return parsed.bullets.map((x) => String(x).trim()).filter(Boolean);
+      }
+      if (typeof parsed.bullets === "string") {
+        return parsed.bullets.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+      }
+    } catch {
+      // fallback sotto
+    }
+  }
+  return text
+    .split(/\r?\n/)
+    .map((x) => x.replace(/^\s*(?:[-*•]\s+|\d+[\).]\s+)/, "").trim())
+    .filter(Boolean);
+}
+
 function normalizeBullets(raw: string[] | null | undefined): string[] {
-  const src = Array.isArray(raw) ? raw : [];
+  let src = Array.isArray(raw) ? raw.map((x) => String(x)) : [];
+  if (src.length === 1 && /[\n\{\[]/.test(src[0])) {
+    src = splitSingleBlob(src[0]);
+  }
   return Array.from({ length: BULLETS_COUNT }, (_, i) => String(src[i] ?? ""));
 }
 

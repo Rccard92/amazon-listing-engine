@@ -21,8 +21,39 @@ import { getWorkItem, updateWorkItem } from "@/lib/work-items";
 const p = it.listingGeneration;
 const BULLETS_COUNT = 5;
 
-function normalizeBullets(raw: string[] | null | undefined): string[] {
-  const src = Array.isArray(raw) ? raw : [];
+function splitLegacyBulletBlob(raw: string): string[] {
+  const text = raw.trim();
+  if (!text) return [];
+  const jsonLike = text.match(/\{[\s\S]*\}/)?.[0];
+  if (jsonLike) {
+    try {
+      const parsed = JSON.parse(jsonLike) as { bullets?: unknown };
+      if (Array.isArray(parsed.bullets)) {
+        return parsed.bullets.map((x) => String(x).trim()).filter(Boolean);
+      }
+      if (typeof parsed.bullets === "string") {
+        return parsed.bullets.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+      }
+    } catch {
+      // fallback sotto
+    }
+  }
+  return text
+    .split(/\r?\n/)
+    .map((x) => x.replace(/^\s*(?:[-*•]\s+|\d+[\).]\s+)/, "").trim())
+    .filter(Boolean);
+}
+
+function normalizeBullets(raw: unknown): string[] {
+  let src: string[] = [];
+  if (Array.isArray(raw)) {
+    src = raw.map((x) => String(x));
+  } else if (typeof raw === "string") {
+    src = splitLegacyBulletBlob(raw);
+  }
+  if (src.length === 1 && /[\n\{\[]/.test(src[0])) {
+    src = splitLegacyBulletBlob(src[0]);
+  }
   return Array.from({ length: BULLETS_COUNT }, (_, i) => String(src[i] ?? ""));
 }
 
