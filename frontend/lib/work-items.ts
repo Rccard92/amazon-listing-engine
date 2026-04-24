@@ -58,6 +58,23 @@ function extractErrorMessage(payload: unknown): string {
   if (payload && typeof payload === "object" && !Array.isArray(payload)) {
     const root = payload as Record<string, unknown>;
     const detail = root.detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      const formatted = detail
+        .map((item) => {
+          if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+          const e = item as Record<string, unknown>;
+          const locRaw = Array.isArray(e.loc) ? e.loc : [];
+          const loc = locRaw
+            .map((x) => (typeof x === "string" || typeof x === "number" ? String(x) : ""))
+            .filter(Boolean)
+            .join(".");
+          const msg = typeof e.msg === "string" ? e.msg : "";
+          if (!loc && !msg) return null;
+          return loc ? `${loc}: ${msg}` : msg;
+        })
+        .filter((x): x is string => Boolean(x));
+      if (formatted.length > 0) return formatted.join(" | ");
+    }
     if (typeof detail === "string" && detail.trim()) return detail;
     if (detail && typeof detail === "object" && !Array.isArray(detail)) {
       const d = detail as Record<string, unknown>;

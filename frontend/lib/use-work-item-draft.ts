@@ -21,6 +21,14 @@ type UseWorkItemDraftOptions = {
   basePath?: string;
 };
 
+const WORK_ITEM_TITLE_MAX_LEN = 180;
+
+function normalizeWorkItemTitle(raw: string, fallbackTitle: string): string {
+  const value = (raw || fallbackTitle).trim();
+  if (!value) return fallbackTitle.slice(0, WORK_ITEM_TITLE_MAX_LEN);
+  return value.slice(0, WORK_ITEM_TITLE_MAX_LEN);
+}
+
 export function useWorkItemDraft({
   workflowType,
   fallbackTitle,
@@ -47,7 +55,7 @@ export function useWorkItemDraft({
 
     void (async () => {
       const created = await createWorkItemResult({
-        title: fallbackTitle,
+        title: normalizeWorkItemTitle(fallbackTitle, fallbackTitle),
         workflow_type: workflowType,
         status: "draft",
         input_data: {},
@@ -96,7 +104,7 @@ export function useWorkItemDraft({
     }) => {
       if (!workItemId) return null;
       return updateWorkItemResult(workItemId, {
-        title: title || fallbackTitle,
+        title: normalizeWorkItemTitle(title || "", fallbackTitle),
         workflow_type: workflowType,
         status,
         summary,
