@@ -1,10 +1,13 @@
 # DOGMA KEYWORD STRATEGY
 
+## Distinzione operativa
+
+- **Keyword planning (pre-content)**: decide allocazione semantica tra frontend e backend.
+- **Backend final terms (post-content)**: produce stringa finale ottimizzata su copertura residua.
+
 ## Keyword Planning (pre-content)
 
-Generare prima una mappa keyword strutturata da usare in title, bullet e description.
-
-Output minimo richiesto:
+Output minimo richiesto e vincolante:
 
 - `keyword_primaria_finale`
 - `keyword_secondarie_prioritarie`
@@ -13,17 +16,37 @@ Output minimo richiesto:
 - `parole_da_tenere_per_backend`
 - `note_su_keyword_da_non_forzare`
 
-## Final Backend Search Terms (post-content)
+Regola: il planning non e una stringa finale, ma una strategia allocativa.
 
-I backend terms finali vanno generati dopo title/bullet/description usando:
+## Backend Final Terms (post-content)
+
+Input obbligatori:
 
 - keyword planning approvato
-- contenuti frontend gia generati
-- spazio semantico ancora scoperto
+- titolo, bullet, descrizione gia generati
+- verifica di copertura semantica residua
 
-## Vincoli backend terms
+Obiettivo: coprire solo spazio utile non gia saturo nel frontend.
 
-- una sola riga, termini separati da spazio
-- no duplicazioni inutili
-- no claim promozionali o testo da slogan
-- rispettare limite byte UTF-8 configurato
+## Priorita di selezione
+
+Ordine di priorita:
+1) sinonimi ad alta intenzione,
+2) frammenti long-tail utili,
+3) termini di contesto d'uso,
+4) termini di compatibilita,
+5) materiali o attributi tecnici.
+
+## Regole di esclusione
+
+- Escludere aggettivi generici e termini marketing.
+- Escludere targeting demografico non pertinente.
+- Escludere frasi complete e termini gia dominanti nel frontend.
+- Escludere ridondanze morfologiche prive di nuovo intento.
+
+## Controllo byte e deduplica
+
+- Output: una sola riga, termini separati da spazio, nessuna punteggiatura.
+- Nessun termine duplicato.
+- Massimizzare copertura semantica entro 250 byte UTF-8.
+- Preferire termini compatti ad alto valore informativo.
