@@ -24,7 +24,15 @@ KeywordCategory = Literal[
 
 KeywordPriority = Literal["high", "medium", "low"]
 KeywordUsage = Literal["title", "bullets_description", "backend_search_terms", "exclude", "verify"]
-ExcludedReasonType = Literal["off_target", "competitor_brand", "invalid_feature_match", "irrelevant_intent"]
+ExcludedReasonType = Literal[
+    "off_target",
+    "competitor_brand",
+    "invalid_feature_match",
+    "irrelevant_intent",
+    "wrong_product_type",
+    "unsupported_feature",
+    "too_ambiguous",
+]
 
 
 class KeywordIntelligenceUploadedFile(BaseModel):
@@ -48,6 +56,7 @@ class ProductAttributeSignal(BaseModel):
 
 class ProductIntelligenceProfile(BaseModel):
     schema_version: str = "v1"
+    rules_version: str = "keyword_intelligence_rules_v1"
     product_detected: str = ""
     category_detected: str | None = None
     main_detected_attributes: list[ProductAttributeSignal] = Field(default_factory=list)
@@ -79,6 +88,7 @@ class ClarificationQuestion(BaseModel):
 
 class ConfirmedKeywordPlan(BaseModel):
     schema_version: str = "v1"
+    rules_version: str = "keyword_intelligence_rules_v1"
     keyword_primaria_finale: str = ""
     keyword_secondarie_prioritarie: list[str] = Field(default_factory=list)
     parole_da_spingere_nel_frontend: list[str] = Field(default_factory=list)
@@ -103,4 +113,5 @@ class KeywordIntelligenceResponse(BaseModel):
     keyword_classifications: list[KeywordClassificationItem] = Field(default_factory=list)
     clarification_questions: list[ClarificationQuestion] = Field(default_factory=list)
     confirmed_keyword_plan: ConfirmedKeywordPlan
+    rules_applied: str = "keyword_intelligence_rules_v1"
     debug_trace: DebugTrace | None = None

@@ -79,7 +79,14 @@ export type KeywordCategory =
 
 export type KeywordPriority = "high" | "medium" | "low";
 export type KeywordUsage = "title" | "bullets_description" | "backend_search_terms" | "exclude" | "verify";
-export type ExcludedReasonType = "off_target" | "competitor_brand" | "invalid_feature_match" | "irrelevant_intent";
+export type ExcludedReasonType =
+  | "off_target"
+  | "competitor_brand"
+  | "invalid_feature_match"
+  | "irrelevant_intent"
+  | "wrong_product_type"
+  | "unsupported_feature"
+  | "too_ambiguous";
 
 export type ProductAttributeSignal = {
   name: string;
@@ -90,6 +97,7 @@ export type ProductAttributeSignal = {
 
 export type ProductIntelligenceProfile = {
   schema_version: string;
+  rules_version: string;
   product_detected: string;
   category_detected: string | null;
   main_detected_attributes: ProductAttributeSignal[];
@@ -121,6 +129,7 @@ export type ClarificationQuestion = {
 
 export type ConfirmedKeywordPlan = {
   schema_version: string;
+  rules_version: string;
   keyword_primaria_finale: string;
   keyword_secondarie_prioritarie: string[];
   parole_da_spingere_nel_frontend: string[];
@@ -157,6 +166,7 @@ export type KeywordIntelligenceResponse = {
   keyword_classifications: KeywordClassificationItem[];
   clarification_questions: ClarificationQuestion[];
   confirmed_keyword_plan: ConfirmedKeywordPlan;
+  rules_applied: string;
   debug_trace?: AiDebugTrace | null;
 };
 

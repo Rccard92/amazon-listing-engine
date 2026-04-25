@@ -30,6 +30,7 @@ const k = it.keywordIntelligence;
 function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
   return {
     schema_version: raw.schema_version ?? "v1",
+    rules_version: raw.rules_version ?? "keyword_intelligence_rules_v1",
     keyword_primaria_finale: raw.keyword_primaria_finale ?? "",
     keyword_secondarie_prioritarie: raw.keyword_secondarie_prioritarie ?? [],
     parole_da_spingere_nel_frontend: raw.parole_da_spingere_nel_frontend ?? [],
@@ -109,6 +110,7 @@ function KeywordIntelligenceInner() {
           clarification_questions:
             (clarRaw as KeywordIntelligenceResponse["clarification_questions"]) ?? [],
           confirmed_keyword_plan: confirmedPlan,
+          rules_applied: (input["keyword_intelligence_rules_applied"] as string) ?? confirmedPlan.rules_version ?? "keyword_intelligence_rules_v1",
         });
         setConfirmPlanByUser(Boolean(confirmedPlan.confirmed_by_user));
       }
@@ -176,6 +178,7 @@ function KeywordIntelligenceInner() {
       [KEYWORD_INTELLIGENCE_KEY]: { keyword_classifications: analysis.keyword_classifications },
       [KEYWORD_CLARIFICATIONS_KEY]: analysis.clarification_questions,
       [CONFIRMED_KEYWORD_PLAN_KEY]: { ...analysis.confirmed_keyword_plan, confirmed_by_user: confirmPlanByUser },
+      keyword_intelligence_rules_applied: analysis.rules_applied ?? analysis.confirmed_keyword_plan.rules_version,
     };
     const updated = await updateWorkItemResult(workItemId, { input_data: nextInput, status: "in_progress" });
     setBusy(false);

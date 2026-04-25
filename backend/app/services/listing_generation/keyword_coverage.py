@@ -19,6 +19,15 @@ def remaining_backend_opportunities(
 ) -> list[str]:
     if plan is None:
         return []
+    excluded = {
+        _normalize(item.keyword)
+        for item in plan.keyword_escluse_definitivamente
+    }
+    verify = {
+        _normalize(item.keyword)
+        for item in plan.classificazioni_confermate
+        if item.category == "VERIFY_PRODUCT_FEATURE" or item.required_user_confirmation
+    }
     candidates = [
         *plan.parole_da_tenere_per_backend,
         *plan.keyword_secondarie_prioritarie,
@@ -27,7 +36,7 @@ def remaining_backend_opportunities(
     seen: set[str] = set()
     for item in candidates:
         norm = _normalize(item)
-        if not norm or norm in seen:
+        if not norm or norm in seen or norm in excluded or norm in verify:
             continue
         seen.add(norm)
         uniq.append(norm)

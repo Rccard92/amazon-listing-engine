@@ -24,6 +24,11 @@ function renderPills(values: string[]): JSX.Element {
 
 export function FinalKeywordPlanCard({ plan }: FinalKeywordPlanCardProps) {
   const excludedKeywords = plan.keyword_escluse_definitivamente.map((item) => `${item.keyword} (${item.excluded_reason_type ?? "n/a"})`);
+  const verifyKeywords = plan.classificazioni_confermate
+    .filter((item) => item.category === "VERIFY_PRODUCT_FEATURE" || item.required_user_confirmation)
+    .map((item) => item.keyword);
+  const frontendCore = plan.parole_da_spingere_nel_frontend.slice(0, 8);
+  const frontendSupport = plan.parole_da_spingere_nel_frontend.slice(8);
 
   return (
     <section className="surface-card rounded-4xl p-6 sm:p-8 space-y-5">
@@ -38,35 +43,28 @@ export function FinalKeywordPlanCard({ plan }: FinalKeywordPlanCardProps) {
           {renderPills(plan.keyword_secondarie_prioritarie)}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.frontend}</p>
-          {renderPills(plan.parole_da_spingere_nel_frontend)}
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.frontendCore}</p>
+          {renderPills(frontendCore)}
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.frontendSupport}</p>
+          {renderPills(frontendSupport)}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.backend}</p>
           {renderPills(plan.parole_da_tenere_per_backend)}
         </div>
+        {verifyKeywords.length ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">{k.finalPlan.verify}</p>
+            {renderPills(verifyKeywords)}
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.excludedFinal}</p>
         {renderPills(excludedKeywords)}
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">{k.finalPlan.impactTitle}</h3>
-        <ul className="mt-2 space-y-1 text-sm text-slate-700">
-          <li>
-            <span className="font-medium">{k.finalPlan.impactTitleLabel}:</span> {plan.keyword_primaria_finale || k.finalPlan.empty}
-          </li>
-          <li>
-            <span className="font-medium">{k.finalPlan.impactBulletsDescriptionLabel}:</span>{" "}
-            {plan.parole_da_spingere_nel_frontend.slice(0, 8).join(", ") || k.finalPlan.empty}
-          </li>
-          <li>
-            <span className="font-medium">{k.finalPlan.impactBackendLabel}:</span>{" "}
-            {plan.parole_da_tenere_per_backend.slice(0, 12).join(", ") || k.finalPlan.empty}
-          </li>
-        </ul>
       </div>
     </section>
   );

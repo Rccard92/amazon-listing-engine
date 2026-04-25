@@ -29,6 +29,9 @@ def test_keyword_intelligence_builds_profile_and_plan() -> None:
     assert out.confirmed_keyword_plan.keyword_primaria_finale
     assert out.confirmed_keyword_plan.confirmed_by_user is False
     assert isinstance(out.confirmed_keyword_plan.keyword_escluse_definitivamente, list)
+    assert out.rules_applied.startswith("keyword_intelligence_rules_")
+    assert out.product_intelligence_profile.rules_version.startswith("keyword_intelligence_rules_")
+    assert out.confirmed_keyword_plan.rules_version.startswith("keyword_intelligence_rules_")
     assert out.debug_trace is None
 
 
@@ -70,3 +73,21 @@ def test_keyword_intelligence_sets_explicit_user_confirmation() -> None:
     )
     out = service.run(brief=brief, enrichment=None, request=req)
     assert out.confirmed_keyword_plan.confirmed_by_user is True
+
+
+def test_keyword_intelligence_excludes_competitor_and_off_target() -> None:
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(nome_prodotto="Aspirapolvere verticale", categoria="Casa", keyword_primarie=["aspirapolvere"])
+    req = KeywordIntelligenceRequest(
+        helium10_rows=[
+            {"keyword": "dyson aspirapolvere senza fili"},
+            {"keyword": "ricambio filtro aspirapolvere"},
+            {"keyword": "aspirapolvere senza filo potente"},
+        ]
+    )
+    out = service.run(brief=brief, enrichment=None, request=req)
+    excluded = {item.keyword: item.excluded_reason_type for item in out.confirmed_keyword_plan.keyword_escluse_definitivamente}
+    assert "dyson aspirapolvere senza fili" in excluded
+    assert excluded["dyson aspirapolvere senza fili"] == "competitor_brand"
+    assert "ricambio filtro aspirapolvere" in excluded
+    assert excluded["ricambio filtro aspirapolvere"] == "wrong_product_type"

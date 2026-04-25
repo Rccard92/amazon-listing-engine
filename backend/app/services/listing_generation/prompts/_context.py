@@ -30,12 +30,23 @@ def format_strategy_for_prompt(strategy: ConfirmedProductStrategy) -> str:
     if strategy.confirmed_keyword_plan is not None:
         ckp = strategy.confirmed_keyword_plan
         parts.append(f"Keyword primaria finale (confirmed plan): {ckp.keyword_primaria_finale}")
+        parts.append(f"Versione regole keyword intelligence: {ckp.rules_version}")
         if ckp.keyword_secondarie_prioritarie:
             parts.append("Keyword secondarie prioritarie (confirmed plan): " + ", ".join(ckp.keyword_secondarie_prioritarie))
         if ckp.parole_da_spingere_nel_frontend:
             parts.append("Parole da spingere nel frontend (confirmed plan): " + ", ".join(ckp.parole_da_spingere_nel_frontend))
         if ckp.parole_da_tenere_per_backend:
             parts.append("Parole da tenere per backend (confirmed plan): " + ", ".join(ckp.parole_da_tenere_per_backend))
+        excluded_keywords = [item.keyword for item in ckp.keyword_escluse_definitivamente]
+        if excluded_keywords:
+            parts.append("Keyword escluse (confirmed plan): " + ", ".join(excluded_keywords[:24]))
+        verify_keywords = [
+            item.keyword
+            for item in ckp.classificazioni_confermate
+            if item.category == "VERIFY_PRODUCT_FEATURE" or item.required_user_confirmation
+        ]
+        if verify_keywords:
+            parts.append("Keyword da verificare prima dell'uso: " + ", ".join(verify_keywords[:16]))
         if ckp.note_su_keyword_da_non_forzare:
             parts.append("Note keyword da non forzare (confirmed plan):\n- " + "\n- ".join(ckp.note_su_keyword_da_non_forzare))
     if strategy.keyword_planning is not None:

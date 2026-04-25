@@ -109,6 +109,10 @@ class Settings(BaseSettings):
         default="",
         description="Path a DOGMA.md (assoluto o relativo alla root backend); vuoto = backend/DOGMA.md.",
     )
+    keyword_intelligence_rules_path: str = Field(
+        default="",
+        description="Path a KEYWORD_INTELLIGENCE_RULES.md (assoluto o relativo alla root backend).",
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
