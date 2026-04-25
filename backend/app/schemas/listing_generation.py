@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.debug_trace import DebugTrace
 from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy
 from app.schemas.keyword_planning import GeneratedFrontendContent
 
@@ -44,6 +45,7 @@ class GenerateListingSectionRequest(BaseModel):
     section: ListingSectionType
     rules: InjectedRules | None = None
     include_raw_model_text: bool = False
+    include_debug_trace: bool = False
     generated_frontend_content: GeneratedFrontendContent | None = None
 
 
@@ -58,3 +60,4 @@ class ListingSectionResult(BaseModel):
     raw_model_text: str | None = None
     validation: ValidationReport = Field(default_factory=ValidationReport)
     post_processing_applied: list[str] = Field(default_factory=list)
+    debug_trace: DebugTrace | None = None

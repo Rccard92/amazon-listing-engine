@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { it } from "@/lib/i18n/it";
 import {
+  CONFIRMED_KEYWORD_PLAN_KEY,
   KEYWORD_PLANNING_KEY,
   requestKeywordPlanningForWorkItem,
   type KeywordPlanning,
@@ -57,6 +58,25 @@ function KeywordPlanningInner() {
         return;
       }
       const raw = (loaded.data.input_data as Record<string, unknown>)[KEYWORD_PLANNING_KEY];
+      const confirmed = (loaded.data.input_data as Record<string, unknown>)[CONFIRMED_KEYWORD_PLAN_KEY];
+      if (confirmed && typeof confirmed === "object" && !Array.isArray(confirmed)) {
+        const c = confirmed as {
+          keyword_primaria_finale?: string;
+          keyword_secondarie_prioritarie?: string[];
+          parole_da_spingere_nel_frontend?: string[];
+          parole_da_tenere_per_backend?: string[];
+          note_su_keyword_da_non_forzare?: string[];
+        };
+        setPlanning({
+          keyword_primaria_finale: c.keyword_primaria_finale ?? "",
+          keyword_secondarie_prioritarie: c.keyword_secondarie_prioritarie ?? [],
+          cluster_semantici: [],
+          parole_da_spingere_nel_frontend: c.parole_da_spingere_nel_frontend ?? [],
+          parole_da_tenere_per_backend: c.parole_da_tenere_per_backend ?? [],
+          note_su_keyword_da_non_forzare: c.note_su_keyword_da_non_forzare ?? [],
+        });
+        return;
+      }
       if (raw && typeof raw === "object" && !Array.isArray(raw)) {
         setPlanning({ ...emptyPlanning(), ...(raw as KeywordPlanning) });
       }

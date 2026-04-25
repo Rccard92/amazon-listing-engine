@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.db.session import get_db
 from app.schemas.analysis_exceptions import AnalysisPipelineError
 from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy
@@ -36,8 +37,15 @@ def _http_from_pipeline(exc: AnalysisPipelineError) -> HTTPException:
 )
 def generate_listing_section(payload: GenerateListingSectionRequest) -> ListingSectionResult:
     """Genera una sola sezione (titolo, bullet, descrizione o keyword backend)."""
+    settings = get_settings()
+    safe_payload = payload.model_copy(
+        update={
+            "include_raw_model_text": bool(settings.enable_ai_debug_trace and payload.include_raw_model_text),
+            "include_debug_trace": bool(settings.enable_ai_debug_trace and payload.include_debug_trace),
+        }
+    )
     try:
-        return orchestrator.generate(payload)
+        return orchestrator.generate(safe_payload)
     except AnalysisPipelineError as exc:
         raise _http_from_pipeline(exc) from exc
 

@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.analysis_exceptions import AnalysisPipelineError
-from app.schemas.manual_workflow import EnrichStrategicFromWorkItemBody, EnrichStrategicRequest
+from app.core.config import get_settings
+from app.schemas.manual_workflow import EnrichStrategicFromWorkItemBody, EnrichStrategicRequest, EnrichStrategicResponse
 from app.schemas.product_brief import ProductBrief
-from app.schemas.strategic_enrichment import StrategicEnrichment
 from app.services.listing_generation.strategy_from_draft import PRODUCT_BRIEF_KEY
 from app.services.strategic_enrichment.enrichment_service import StrategicEnrichmentService
 from app.services.work_item_service import WorkItemService
@@ -32,13 +32,15 @@ def _http_from_pipeline(exc: AnalysisPipelineError) -> HTTPException:
 
 @router.post(
     "/manual-workflow/enrich",
-    response_model=StrategicEnrichment,
+    response_model=EnrichStrategicResponse,
     status_code=status.HTTP_200_OK,
 )
-def enrich_from_brief(payload: EnrichStrategicRequest) -> StrategicEnrichment:
+def enrich_from_brief(payload: EnrichStrategicRequest) -> EnrichStrategicResponse:
     """Suggerisce StrategicEnrichment a partire da un ProductBrief (senza salvataggio)."""
     try:
-        return _enrichment.enrich(payload.product_brief)
+        trace_enabled = bool(get_settings().enable_ai_debug_trace and payload.include_debug_trace)
+        enrichment, trace = _enrichment.enrich_with_trace(payload.product_brief, include_debug_trace=trace_enabled)
+        return EnrichStrategicResponse(enrichment=enrichment, debug_trace=trace)
     except AnalysisPipelineError as exc:
         raise _http_from_pipeline(exc) from exc
     except (ValueError, TypeError) as exc:
@@ -50,14 +52,14 @@ def enrich_from_brief(payload: EnrichStrategicRequest) -> StrategicEnrichment:
 
 @router.post(
     "/manual-workflow/enrich-work-item/{item_id}",
-    response_model=StrategicEnrichment,
+    response_model=EnrichStrategicResponse,
     status_code=status.HTTP_200_OK,
 )
 def enrich_from_work_item(
     item_id: UUID,
     db: Session = Depends(get_db),
     body: EnrichStrategicFromWorkItemBody = Body(default_factory=EnrichStrategicFromWorkItemBody),
-) -> StrategicEnrichment:
+) -> EnrichStrategicResponse:
     """Carica `product_brief` dal work item (o usa override nel body) e restituisce arricchimento suggerito."""
     item = _work_items.get_item(db, item_id)
     if item is None:
@@ -74,7 +76,9 @@ def enrich_from_work_item(
             )
         brief = ProductBrief.model_validate(pb_raw)
     try:
-        return _enrichment.enrich(brief)
+        trace_enabled = bool(get_settings().enable_ai_debug_trace and body.include_debug_trace)
+        enrichment, trace = _enrichment.enrich_with_trace(brief, include_debug_trace=trace_enabled)
+        return EnrichStrategicResponse(enrichment=enrichment, debug_trace=trace)
     except AnalysisPipelineError as exc:
         raise _http_from_pipeline(exc) from exc
     except (ValueError, TypeError) as exc:

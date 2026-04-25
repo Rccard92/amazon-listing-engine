@@ -46,7 +46,7 @@ function PhaseStrip() {
       <span className="text-slate-400">→</span>
       <span className="rounded-xl px-3 py-1.5">{p.phases.enrich}</span>
       <span className="text-slate-400">→</span>
-      <span className="rounded-xl px-3 py-1.5">{p.phases.keywordPlan}</span>
+      <span className="rounded-xl px-3 py-1.5">{p.phases.keywordIntel}</span>
       <span className="text-slate-400">→</span>
       <span className="rounded-xl px-3 py-1.5">{p.phases.generate}</span>
     </div>

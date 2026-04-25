@@ -8,8 +8,10 @@ from dataclasses import dataclass
 
 from pydantic import ValidationError
 
+from app.schemas.debug_trace import DebugTrace
 from app.schemas.product_brief import ProductBrief
 from app.schemas.strategic_enrichment import StrategicEnrichment
+from app.services.debug_trace import DebugTraceCollector
 from app.services.listing_generation.llm_client import ListingLLMClient
 from app.services.listing_generation.openai_llm_client import OpenAIListingLLMClient
 
@@ -43,6 +45,29 @@ class StrategicEnrichmentService:
     llm: ListingLLMClient | None = None
 
     def enrich(self, brief: ProductBrief) -> StrategicEnrichment:
+        enrichment, _ = self.enrich_with_trace(brief, include_debug_trace=False)
+        return enrichment
+
+    def enrich_with_trace(
+        self,
+        brief: ProductBrief,
+        *,
+        include_debug_trace: bool = False,
+    ) -> tuple[StrategicEnrichment, DebugTrace | None]:
+        trace = DebugTraceCollector(step="product_intelligence_enrichment", enabled=include_debug_trace)
+        if include_debug_trace:
+            trace.summary = "Arricchimento strategico calcolato da brief normalizzato."
+            trace.inputs_used = {
+                "nome_prodotto": brief.nome_prodotto,
+                "categoria": brief.categoria,
+                "brand": brief.brand,
+                "keyword_primarie": brief.keyword_primarie,
+                "keyword_secondarie": brief.keyword_secondarie,
+            }
+            trace.add_block(
+                title="Input usati",
+                content=f"Prodotto: {brief.nome_prodotto or '-'}\nCategoria: {brief.categoria or '-'}\nBrand: {brief.brand or '-'}",
+            )
         client = self.llm or OpenAIListingLLMClient()
         user = brief.model_dump_json(indent=2, exclude_none=True)
         raw = client.generate_text(
@@ -51,6 +76,15 @@ class StrategicEnrichmentService:
             max_output_tokens=1600,
         )
         data = _extract_json_object(raw)
+        if include_debug_trace:
+            trace.intermediate_outputs = {
+                "benefici_count": len(data.get("benefici_principali") or []),
+                "obiezioni_count": len(data.get("gestione_obiezioni") or []),
+            }
+            trace.add_decision(
+                label="Selezione benefici principali",
+                reason="Massimo 3-6 elementi per mantenere chiarezza e riuso nella generazione copy.",
+            )
         base = {
             "benefici_principali": data.get("benefici_principali") or [],
             "usp_differenziazione": data.get("usp_differenziazione"),
@@ -60,9 +94,9 @@ class StrategicEnrichmentService:
             "enrichment_provenance": "llm_v1",
         }
         try:
-            return StrategicEnrichment.model_validate(base)
+            enrichment = StrategicEnrichment.model_validate(base)
         except ValidationError:
-            return StrategicEnrichment(
+            enrichment = StrategicEnrichment(
                 benefici_principali=[str(x) for x in (data.get("benefici_principali") or []) if x],
                 usp_differenziazione=str(data.get("usp_differenziazione") or "") or None,
                 target_cliente=str(data.get("target_cliente") or "") or None,
@@ -70,3 +104,15 @@ class StrategicEnrichmentService:
                 angolo_emotivo=str(data.get("angolo_emotivo") or "") or None,
                 enrichment_provenance="llm_v1",
             )
+        if include_debug_trace:
+            trace.final_output = enrichment.model_dump(mode="json")
+            trace.confidence_score = 0.88 if enrichment.benefici_principali else 0.65
+            trace.questions_raised = [
+                "Confermare target cliente principale?" if not enrichment.target_cliente else "",
+            ]
+            trace.questions_raised = [q for q in trace.questions_raised if q]
+            trace.reasoning_summary = (
+                "Il sistema ha sintetizzato benefici/USP/target dal brief, con fallback prudente sui campi mancanti."
+            )
+            trace.add_block(title="Output finale", content=json.dumps(enrichment.model_dump(mode="json"), ensure_ascii=True))
+        return enrichment, trace.build()

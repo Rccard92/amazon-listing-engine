@@ -10,6 +10,7 @@ from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy, Pri
 from app.schemas.product_ai_analysis import ProductStrategyDraft
 from app.schemas.product_brief import ProductBrief
 from app.schemas.strategic_enrichment import StrategicEnrichment
+from app.schemas.keyword_intelligence import ConfirmedKeywordPlan
 from app.schemas.keyword_planning import KeywordPlanning
 from app.services.manual_workflow.assemble_strategy import assemble_confirmed_strategy
 
@@ -19,6 +20,7 @@ MANUAL_PRODUCT_STRATEGY_KEY = "manual_product_strategy"
 PRODUCT_BRIEF_KEY = "product_brief"
 STRATEGIC_ENRICHMENT_KEY = "strategic_enrichment"
 KEYWORD_PLANNING_KEY = "keyword_planning"
+CONFIRMED_KEYWORD_PLAN_KEY = "confirmed_keyword_plan"
 
 
 def _split_lines(value: str | None) -> list[str]:
@@ -138,14 +140,22 @@ def confirmed_strategy_from_work_item_input(input_data: dict) -> ConfirmedProduc
         brief = ProductBrief.model_validate(pb_raw)
         enr_raw = input_data.get(STRATEGIC_ENRICHMENT_KEY)
         kwp_raw = input_data.get(KEYWORD_PLANNING_KEY)
+        ckp_raw = input_data.get(CONFIRMED_KEYWORD_PLAN_KEY)
         enr: StrategicEnrichment | None = None
         kwp: KeywordPlanning | None = None
+        ckp: ConfirmedKeywordPlan | None = None
         if isinstance(enr_raw, dict):
             enr = StrategicEnrichment.model_validate(enr_raw)
         if isinstance(kwp_raw, dict):
             kwp = KeywordPlanning.model_validate(kwp_raw)
+        if isinstance(ckp_raw, dict):
+            ckp = ConfirmedKeywordPlan.model_validate(ckp_raw)
         assembled = assemble_confirmed_strategy(brief, enr)
-        return assembled.model_copy(update={"keyword_planning": kwp})
+        if ckp is not None:
+            primarie = [ckp.keyword_primaria_finale] if ckp.keyword_primaria_finale.strip() else assembled.keyword_primarie
+            secondarie = ckp.keyword_secondarie_prioritarie or assembled.keyword_secondarie
+            assembled = assembled.model_copy(update={"keyword_primarie": primarie, "keyword_secondarie": secondarie})
+        return assembled.model_copy(update={"confirmed_keyword_plan": ckp, "keyword_planning": kwp})
 
     manual = input_data.get(MANUAL_PRODUCT_STRATEGY_KEY)
     parsed_manual = confirmed_strategy_from_manual_dict(manual)

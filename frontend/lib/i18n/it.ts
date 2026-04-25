@@ -207,10 +207,12 @@ export const it = {
     phases: {
       data: "Fase 1 · Dati prodotto",
       enrich: "Fase 2 · Arricchimento strategico",
-      keywordPlan: "Fase 3 · Keyword planning",
+      keywordIntel: "Fase 3 · Keyword Intelligence",
+      keywordPlan: "Fase 3b · Keyword planning (legacy)",
       generate: "Fase 4 · Generazione contenuti",
       phase1Active: "Stai compilando il brief strutturato (DOGMA-ready).",
-      afterSave: "Salva la bozza, poi passa all’arricchimento strategico e keyword planning prima della generazione del copy.",
+      afterSave:
+        "Salva la bozza, poi passa ad arricchimento strategico e Keyword Intelligence prima della generazione del copy.",
     },
     brief: {
       identityTitle: "Identità e brand",
@@ -245,7 +247,7 @@ export const it = {
     suggestAiHint: "Usa il brief salvato nel work item (richiede API OpenAI sul server).",
     saveEnrichment: "Salva arricchimento",
     savedEnrichment: "Arricchimento salvato.",
-    goGenerate: "Vai al keyword planning",
+    goGenerate: "Vai a Keyword Intelligence",
     missingBrief: "Work item senza product_brief: torna alla Fase 1 e salva il modulo.",
     fields: {
       benefici: "Benefici principali",
@@ -257,7 +259,7 @@ export const it = {
     enrichHelp: "Un beneficio o obiezione per riga nelle liste.",
   },
   keywordPlanning: {
-    badge: "Fase 3 · Keyword planning",
+    badge: "Fase 3b · Keyword planning (compatibilità)",
     title: "Keyword planning strategico",
     subtitle:
       "Definisci il piano keyword che guidera titolo, bullet e descrizione. I backend terms finali saranno generati dopo i contenuti frontend.",
@@ -271,6 +273,30 @@ export const it = {
       frontendPush: "Parole da spingere nel frontend (una per riga)",
       backendKeep: "Parole da tenere per backend (una per riga)",
       notes: "Note su keyword da non forzare (una per riga)",
+    },
+  },
+  keywordIntelligence: {
+    badge: "Fase 3 · Keyword Intelligence",
+    title: "Keyword Intelligence",
+    subtitle:
+      "Carica i dati keyword, interpreta il prodotto, classifica le keyword e conferma un piano prima della generazione contenuti.",
+    uploadTitle: "Upload Helium10 (CSV/XLSX)",
+    uploadHint:
+      "CSV supportato con parsing completo. XLSX viene tracciato e gestito in fallback seed, senza bloccare il workflow.",
+    manualSeedsLabel: "Seed keyword manuali (una per riga)",
+    run: "Analizza keyword intelligence",
+    save: "Salva piano keyword confermato",
+    saved: "Keyword Intelligence salvata.",
+    goGenerate: "Vai alla generazione contenuti",
+    goLegacy: "Apri keyword planning legacy",
+    sections: {
+      detected: "Prodotto interpretato",
+      attrsMain: "Attributi principali rilevati",
+      attrsExcluded: "Attributi esclusi",
+      attrsUncertain: "Attributi incerti",
+      clarifications: "Domande di chiarimento",
+      classifications: "Classificazione keyword",
+      confirmedPlan: "Piano keyword confermato",
     },
   },
   history: {

@@ -3,7 +3,9 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { AiTracePanel } from "@/components/ai-trace/ai-trace-panel";
 import type {
+  AiDebugTrace,
   GeneratedFrontendContent,
   ListingSectionResult,
   ListingSectionType,
@@ -26,6 +28,7 @@ type Props = {
   onValidation: (v: ListingSectionResult["validation"] | null) => void;
   onGenerated: (result: ListingSectionResult) => void;
   generatedFrontendContent?: GeneratedFrontendContent | null;
+  aiDebugEnabled?: boolean;
 };
 
 const BULLETS_COUNT = 5;
@@ -80,10 +83,12 @@ export function SectionOutputPanel({
   onValidation,
   onGenerated,
   generatedFrontendContent,
+  aiDebugEnabled = false,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const [trace, setTrace] = useState<AiDebugTrace | null>(null);
 
   async function runGenerate() {
     if (!strategy.nome_prodotto.trim()) {
@@ -95,7 +100,8 @@ export function SectionOutputPanel({
     const res = await generateListingSection({
       strategy,
       section,
-      include_raw_model_text: false,
+      include_raw_model_text: aiDebugEnabled,
+      include_debug_trace: aiDebugEnabled,
       generated_frontend_content: section === "keyword_strategy" ? generatedFrontendContent ?? null : null,
     });
     setLoading(false);
@@ -105,6 +111,7 @@ export function SectionOutputPanel({
       return;
     }
     onGenerated(res.data);
+    setTrace(res.data.debug_trace ?? null);
     onValidation(res.data.validation);
     if (section === "bullet_points") {
       onBulletsChange(normalizeBullets(res.data.bullets));
@@ -170,6 +177,7 @@ export function SectionOutputPanel({
           <p className="mt-1 text-xs text-rose-700/90">{p.generationErrorHint}</p>
         </div>
       ) : null}
+      {aiDebugEnabled ? <AiTracePanel trace={trace} /> : null}
       {section === "bullet_points" ? (
         <div className="space-y-3">
           <p className="text-xs font-medium text-slate-500">{p.editorHint}</p>

@@ -2,6 +2,7 @@
 
 from app.schemas.product_ai_analysis import ProductStrategyDraft
 from app.services.listing_generation.strategy_from_draft import (
+    CONFIRMED_KEYWORD_PLAN_KEY,
     PRODUCT_BRIEF_KEY,
     STRATEGIC_ENRICHMENT_KEY,
     confirmed_from_draft_and_user,
@@ -80,6 +81,41 @@ def test_confirmed_strategy_from_work_item_input_prefers_product_brief() -> None
     assert "acciaio" in s.caratteristiche_tecniche
     assert s.keyword_primarie == ["k1"]
     assert s.angolo_emotivo == "Sicurezza"
+
+
+def test_confirmed_strategy_from_work_item_input_prefers_confirmed_keyword_plan() -> None:
+    inp = {
+        PRODUCT_BRIEF_KEY: {
+            "nome_prodotto": "Briefed",
+            "categoria": "Cucina",
+            "brand": "Meridiana",
+            "descrizione_attuale": None,
+            "bullet_attuali": [],
+            "caratteristiche_specifiche": [],
+            "dettagli_articolo": None,
+            "dettagli_aggiuntivi": None,
+            "riassunto_ai_recensioni": None,
+            "keyword_primarie": ["legacy primaria"],
+            "keyword_secondarie": ["legacy secondaria"],
+            "livello_prezzo": "mid",
+            "linee_guida_brand": None,
+            "note_utente": None,
+        },
+        CONFIRMED_KEYWORD_PLAN_KEY: {
+            "schema_version": "v1",
+            "keyword_primaria_finale": "nuova primaria",
+            "keyword_secondarie_prioritarie": ["secondaria uno", "secondaria due"],
+            "parole_da_spingere_nel_frontend": [],
+            "parole_da_tenere_per_backend": [],
+            "note_su_keyword_da_non_forzare": [],
+            "classificazioni_confermate": [],
+            "confirmed_by_user": True,
+        },
+    }
+    s = confirmed_strategy_from_work_item_input(inp)
+    assert s.confirmed_keyword_plan is not None
+    assert s.keyword_primarie == ["nuova primaria"]
+    assert s.keyword_secondarie == ["secondaria uno", "secondaria due"]
 
 
 def test_confirmed_strategy_from_work_item_input_prefers_manual_block() -> None:

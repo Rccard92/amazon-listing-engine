@@ -4,10 +4,13 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { AiTracePanel } from "@/components/ai-trace/ai-trace-panel";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchFeatureFlags } from "@/lib/api";
 import { it } from "@/lib/i18n/it";
 import {
+  type AiDebugTrace,
   emptyStrategicEnrichment,
   PRODUCT_BRIEF_KEY,
   requestStrategicEnrichmentForWorkItem,
@@ -30,6 +33,21 @@ function EnrichmentInner() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [saveHint, setSaveHint] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [aiDebugEnabled, setAiDebugEnabled] = useState(false);
+  const [debugTrace, setDebugTrace] = useState<AiDebugTrace | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFeatures() {
+      const features = await fetchFeatureFlags();
+      if (cancelled || !features) return;
+      setAiDebugEnabled(Boolean(features.ai_debug_trace_enabled));
+    }
+    void loadFeatures();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,13 +95,14 @@ function EnrichmentInner() {
     if (!workItemId) return;
     setAiBusy(true);
     setAiError(null);
-    const res = await requestStrategicEnrichmentForWorkItem(workItemId);
+    const res = await requestStrategicEnrichmentForWorkItem(workItemId, aiDebugEnabled);
     setAiBusy(false);
     if (!res.ok) {
       setAiError(res.error?.message_it ?? it.workflowErrors.UNKNOWN);
       return;
     }
-    setEnrichment(res.enrichment);
+    setEnrichment(res.response.enrichment);
+    setDebugTrace(res.response.debug_trace ?? null);
   }
 
   async function saveEnrichment(nextStatus?: "draft" | "in_progress" | "completed") {
@@ -115,7 +134,7 @@ function EnrichmentInner() {
   async function handleGoGenerate() {
     if (!workItemId) return;
     await saveEnrichment("in_progress");
-    router.push(`/keyword-planning?workItemId=${workItemId}`);
+    router.push(`/keyword-intelligence?workItemId=${workItemId}`);
   }
 
   function setBeneficiText(t: string) {
@@ -139,7 +158,7 @@ function EnrichmentInner() {
           <span className="text-slate-400">→</span>
           <span className="rounded-xl bg-white px-3 py-1.5 text-slate-900 shadow-sm">{it.newListing.phases.enrich}</span>
           <span className="text-slate-400">→</span>
-          <span className="rounded-xl px-3 py-1.5">{it.newListing.phases.keywordPlan}</span>
+          <span className="rounded-xl px-3 py-1.5">{it.newListing.phases.keywordIntel}</span>
           <span className="text-slate-400">→</span>
           <span className="rounded-xl px-3 py-1.5">{it.newListing.phases.generate}</span>
         </div>
@@ -159,6 +178,7 @@ function EnrichmentInner() {
               <p className="text-xs text-slate-500">{m.suggestAiHint}</p>
             </div>
             <p className="mt-2 text-xs text-slate-500">{m.enrichHelp}</p>
+            {aiDebugEnabled ? <AiTracePanel trace={debugTrace} /> : null}
 
             <div className="mt-6 grid gap-4">
               <div>

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.routes import health, keyword_planning, listing_generation, manual_workflow, projects, work_items
+from app.api.routes import features, health, keyword_intelligence, keyword_planning, listing_generation, manual_workflow, projects, work_items
 from app.core.config import get_settings
 
 
@@ -10,6 +10,7 @@ def build_api_router() -> APIRouter:
     """Costruisce il router in base a `enable_url_ingestion` (valutato alla creazione app)."""
     api_router = APIRouter()
     api_router.include_router(health.router, tags=["health"])
+    api_router.include_router(features.router, tags=["features"])
 
     if get_settings().enable_url_ingestion:
         from app.api.routes import amazon_analysis, workflows
@@ -18,6 +19,7 @@ def build_api_router() -> APIRouter:
         api_router.include_router(workflows.router, tags=["workflows"])
 
     api_router.include_router(listing_generation.router, tags=["listing-generation"])
+    api_router.include_router(keyword_intelligence.router, tags=["keyword-intelligence"])
     api_router.include_router(keyword_planning.router, tags=["keyword-planning"])
     api_router.include_router(manual_workflow.router, tags=["manual-workflow"])
     api_router.include_router(projects.router, tags=["projects"])

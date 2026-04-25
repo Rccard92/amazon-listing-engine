@@ -72,6 +72,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - Documentazione interattiva: `http://localhost:8000/docs`
 - Health (liveness): `GET http://localhost:8000/api/v1/health`
 - Health (readiness + DB): `GET http://localhost:8000/api/v1/health/ready`
+- Feature flags runtime: `GET http://localhost:8000/api/v1/features`
 
 ## Deploy Railway (backend)
 
@@ -94,6 +95,7 @@ Variabili consigliate per l’analisi AI del workflow “da prodotto simile” (
 
 - `OPENAI_API_KEY` — obbligatoria per la bozza strategica strutturata; se assente il salvataggio resta possibile ma con fallback e messaggio lato UI.
 - `OPENAI_MODEL`, `OPENAI_TIMEOUT_SECONDS`, `OPENAI_MAX_INPUT_CHARS` — opzionali con default in `app.core.config`.
+- `ENABLE_AI_DEBUG_TRACE` — flag temporanea (default `false`) per abilitare la Traccia AI strutturata in enrichment/keyword intelligence/generazione.
 
 Nota: se il servizio Railway parte dalla root repo, usa:
 

@@ -37,12 +37,27 @@ export type HealthLive = {
   service: string;
 };
 
+export type FeatureFlags = {
+  ai_debug_trace_enabled: boolean;
+};
+
 export async function fetchHealthLive(): Promise<HealthLive | null> {
   const url = buildApiUrl("/api/v1/health");
   try {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as HealthLive;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchFeatureFlags(): Promise<FeatureFlags | null> {
+  const url = buildApiUrl("/api/v1/features");
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as FeatureFlags;
   } catch {
     return null;
   }

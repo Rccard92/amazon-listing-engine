@@ -27,6 +27,17 @@ def format_strategy_for_prompt(strategy: ConfirmedProductStrategy) -> str:
         parts.append("Keyword primarie: " + ", ".join(strategy.keyword_primarie))
     if strategy.keyword_secondarie:
         parts.append("Keyword secondarie: " + ", ".join(strategy.keyword_secondarie))
+    if strategy.confirmed_keyword_plan is not None:
+        ckp = strategy.confirmed_keyword_plan
+        parts.append(f"Keyword primaria finale (confirmed plan): {ckp.keyword_primaria_finale}")
+        if ckp.keyword_secondarie_prioritarie:
+            parts.append("Keyword secondarie prioritarie (confirmed plan): " + ", ".join(ckp.keyword_secondarie_prioritarie))
+        if ckp.parole_da_spingere_nel_frontend:
+            parts.append("Parole da spingere nel frontend (confirmed plan): " + ", ".join(ckp.parole_da_spingere_nel_frontend))
+        if ckp.parole_da_tenere_per_backend:
+            parts.append("Parole da tenere per backend (confirmed plan): " + ", ".join(ckp.parole_da_tenere_per_backend))
+        if ckp.note_su_keyword_da_non_forzare:
+            parts.append("Note keyword da non forzare (confirmed plan):\n- " + "\n- ".join(ckp.note_su_keyword_da_non_forzare))
     if strategy.keyword_planning is not None:
         kp = strategy.keyword_planning
         parts.append(f"Keyword primaria finale (planning): {kp.keyword_primaria_finale}")

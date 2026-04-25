@@ -43,6 +43,7 @@ export type ConfirmedProductStrategy = {
   insight_recensioni_clienti: string | null;
   keyword_primarie: string[];
   keyword_secondarie: string[];
+  confirmed_keyword_plan?: ConfirmedKeywordPlan | null;
   keyword_planning?: KeywordPlanning | null;
   linee_guida_brand: string | null;
   angolo_emotivo: string | null;
@@ -63,10 +64,137 @@ export type KeywordPlanning = {
   note_su_keyword_da_non_forzare: string[];
 };
 
+export type KeywordCategory =
+  | "PRIMARY_SEO"
+  | "SECONDARY_SEO"
+  | "FEATURE_KEYWORD"
+  | "LONG_TAIL"
+  | "BACKEND_ONLY"
+  | "PPC_EXACT"
+  | "PPC_PHRASE"
+  | "BRANDED_COMPETITOR"
+  | "OFF_TARGET"
+  | "VERIFY_PRODUCT_FEATURE"
+  | "NEGATIVE_KEYWORD";
+
+export type ProductAttributeSignal = {
+  name: string;
+  value: string;
+  confidence: number;
+  source: string;
+};
+
+export type ProductIntelligenceProfile = {
+  schema_version: string;
+  product_detected: string;
+  category_detected: string | null;
+  main_detected_attributes: ProductAttributeSignal[];
+  excluded_attributes: string[];
+  uncertain_attributes: string[];
+  keyword_seed_pool: string[];
+};
+
+export type KeywordClassificationItem = {
+  keyword: string;
+  category: KeywordCategory;
+  confidence: number;
+  rationale: string;
+  source: string;
+};
+
+export type ClarificationQuestion = {
+  id: string;
+  question: string;
+  reason: string;
+  priority: "low" | "medium" | "high";
+  answer: string | null;
+};
+
+export type ConfirmedKeywordPlan = {
+  schema_version: string;
+  keyword_primaria_finale: string;
+  keyword_secondarie_prioritarie: string[];
+  parole_da_spingere_nel_frontend: string[];
+  parole_da_tenere_per_backend: string[];
+  note_su_keyword_da_non_forzare: string[];
+  classificazioni_confermate: KeywordClassificationItem[];
+  confirmed_by_user: boolean;
+};
+
+export type Helium10KeywordRow = {
+  keyword: string;
+  search_volume?: number | null;
+  cpr?: number | null;
+  source_row?: number | null;
+};
+
+export type KeywordIntelligenceUploadedFile = {
+  filename: string;
+  file_type: "csv" | "xlsx" | "unknown";
+};
+
+export type KeywordIntelligenceRequest = {
+  manual_seed_keywords: string[];
+  helium10_rows: Helium10KeywordRow[];
+  uploaded_files: KeywordIntelligenceUploadedFile[];
+  clarification_answers: Record<string, string>;
+  include_debug_trace?: boolean;
+};
+
+export type KeywordIntelligenceResponse = {
+  product_intelligence_profile: ProductIntelligenceProfile;
+  keyword_classifications: KeywordClassificationItem[];
+  clarification_questions: ClarificationQuestion[];
+  confirmed_keyword_plan: ConfirmedKeywordPlan;
+  debug_trace?: AiDebugTrace | null;
+};
+
+export type StrategicEnrichmentResponse = {
+  enrichment: StrategicEnrichment;
+  debug_trace?: AiDebugTrace | null;
+};
+
 export type GeneratedFrontendContent = {
   seo_title?: string | null;
   bullets?: string[];
   description?: string | null;
+};
+
+export type AiDebugTraceDecision = {
+  label: string;
+  reason: string;
+};
+
+export type AiDebugTraceValidation = {
+  code: string;
+  severity: string;
+  message: string;
+};
+
+export type AiDebugTraceBlock = {
+  title: string;
+  content: string;
+};
+
+export type AiDebugTraceStep = {
+  step: string;
+  dogma_modules: string[];
+  inputs_used: Record<string, unknown>;
+  intermediate_outputs: Record<string, unknown>;
+  decisions: AiDebugTraceDecision[];
+  questions_raised: string[];
+  confidence_score: number | null;
+  validation_checks: AiDebugTraceValidation[];
+  final_output: Record<string, unknown> | string | null;
+  reasoning_summary: string;
+  ui_blocks: AiDebugTraceBlock[];
+};
+
+export type AiDebugTrace = {
+  trace_version: string;
+  step: string;
+  summary: string;
+  data: AiDebugTraceStep;
 };
 
 export type ValidationSeverity = "error" | "warning" | "info";
@@ -97,6 +225,7 @@ export type GenerateListingSectionRequest = {
   section: ListingSectionType;
   rules?: InjectedRules | null;
   include_raw_model_text?: boolean;
+  include_debug_trace?: boolean;
   generated_frontend_content?: GeneratedFrontendContent | null;
 };
 
@@ -109,6 +238,7 @@ export type ListingSectionResult = {
   raw_model_text?: string | null;
   validation: ValidationReport;
   post_processing_applied: string[];
+  debug_trace?: AiDebugTrace | null;
 };
 
 export type PipelineErrorDetail = {
@@ -124,6 +254,10 @@ export type GenerateSectionResult =
 export const PRODUCT_BRIEF_KEY = "product_brief" as const;
 export const STRATEGIC_ENRICHMENT_KEY = "strategic_enrichment" as const;
 export const KEYWORD_PLANNING_KEY = "keyword_planning" as const;
+export const KEYWORD_INTELLIGENCE_KEY = "keyword_intelligence" as const;
+export const PRODUCT_INTELLIGENCE_PROFILE_KEY = "product_intelligence_profile" as const;
+export const KEYWORD_CLARIFICATIONS_KEY = "keyword_clarifications" as const;
+export const CONFIRMED_KEYWORD_PLAN_KEY = "confirmed_keyword_plan" as const;
 /** Legacy: strategia flat salvata prima del brief strutturato. */
 export const MANUAL_PRODUCT_STRATEGY_KEY = "manual_product_strategy" as const;
 export const DEFAULT_BRAND = "Meridiana";
@@ -158,6 +292,7 @@ export async function generateListingSection(
       section: payload.section,
       rules: payload.rules ?? null,
       include_raw_model_text: payload.include_raw_model_text ?? false,
+      include_debug_trace: payload.include_debug_trace ?? false,
       generated_frontend_content: payload.generated_frontend_content ?? null,
     }),
   });
@@ -241,14 +376,17 @@ export function migrateLegacyManualToBriefAndEnrichment(raw: Record<string, unkn
   };
 }
 
-export async function requestStrategicEnrichment(productBrief: ProductBrief): Promise<
-  | { ok: true; enrichment: StrategicEnrichment }
+export async function requestStrategicEnrichment(
+  productBrief: ProductBrief,
+  includeDebugTrace = false,
+): Promise<
+  | { ok: true; response: StrategicEnrichmentResponse }
   | { ok: false; status: number; error: PipelineErrorDetail | null }
 > {
   const res = await fetch(buildApiUrl("/api/v1/manual-workflow/enrich"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ product_brief: productBrief }),
+    body: JSON.stringify({ product_brief: productBrief, include_debug_trace: includeDebugTrace }),
   });
   const rawText = await res.text();
   let body: unknown = null;
@@ -260,17 +398,20 @@ export async function requestStrategicEnrichment(productBrief: ProductBrief): Pr
   if (!res.ok) {
     return { ok: false, status: res.status, error: parsePipelineError(body) };
   }
-  return { ok: true, enrichment: body as StrategicEnrichment };
+  return { ok: true, response: body as StrategicEnrichmentResponse };
 }
 
-export async function requestStrategicEnrichmentForWorkItem(workItemId: string): Promise<
-  | { ok: true; enrichment: StrategicEnrichment }
+export async function requestStrategicEnrichmentForWorkItem(
+  workItemId: string,
+  includeDebugTrace = false,
+): Promise<
+  | { ok: true; response: StrategicEnrichmentResponse }
   | { ok: false; status: number; error: PipelineErrorDetail | null }
 > {
   const res = await fetch(buildApiUrl(`/api/v1/manual-workflow/enrich-work-item/${workItemId}`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ include_debug_trace: includeDebugTrace }),
   });
   const rawText = await res.text();
   let body: unknown = null;
@@ -282,7 +423,7 @@ export async function requestStrategicEnrichmentForWorkItem(workItemId: string):
   if (!res.ok) {
     return { ok: false, status: res.status, error: parsePipelineError(body) };
   }
-  return { ok: true, enrichment: body as StrategicEnrichment };
+  return { ok: true, response: body as StrategicEnrichmentResponse };
 }
 
 export async function getConfirmedStrategyFromWorkItem(workItemId: string): Promise<ConfirmedProductStrategy | null> {
@@ -314,6 +455,31 @@ export async function requestKeywordPlanningForWorkItem(workItemId: string): Pro
   return { ok: true, planning: body as KeywordPlanning };
 }
 
+export async function requestKeywordIntelligenceForWorkItem(
+  workItemId: string,
+  payload: KeywordIntelligenceRequest,
+): Promise<
+  | { ok: true; intelligence: KeywordIntelligenceResponse }
+  | { ok: false; status: number; error: PipelineErrorDetail | null }
+> {
+  const res = await fetch(buildApiUrl(`/api/v1/keyword-intelligence/plan-work-item/${workItemId}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const rawText = await res.text();
+  let body: unknown = null;
+  try {
+    body = rawText ? JSON.parse(rawText) : null;
+  } catch {
+    body = null;
+  }
+  if (!res.ok) {
+    return { ok: false, status: res.status, error: parsePipelineError(body) };
+  }
+  return { ok: true, intelligence: body as KeywordIntelligenceResponse };
+}
+
 export function emptyStrategy(): ConfirmedProductStrategy {
   return {
     nome_prodotto: "",
@@ -326,6 +492,7 @@ export function emptyStrategy(): ConfirmedProductStrategy {
     insight_recensioni_clienti: null,
     keyword_primarie: [],
     keyword_secondarie: [],
+    confirmed_keyword_plan: null,
     keyword_planning: null,
     linee_guida_brand: null,
     angolo_emotivo: null,

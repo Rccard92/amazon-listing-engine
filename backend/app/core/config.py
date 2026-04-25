@@ -62,6 +62,10 @@ class Settings(BaseSettings):
         description="Se true, espone POST /amazon/analyze e /workflows/create-from-similar (fetch/scrape competitor). "
         "MVP manuale-first: default false.",
     )
+    enable_ai_debug_trace: bool = Field(
+        default=False,
+        description="Feature flag temporanea per esporre tracce strutturate Debug AI nelle API.",
+    )
 
     openai_api_key: str = Field(
         default="",

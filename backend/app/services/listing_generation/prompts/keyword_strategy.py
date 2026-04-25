@@ -4,6 +4,7 @@ from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy
 from app.schemas.listing_generation import InjectedRules
 from app.schemas.keyword_planning import GeneratedFrontendContent
 
+from app.services.listing_generation.keyword_coverage import remaining_backend_opportunities
 from app.services.listing_generation.prompts._context import format_rules_addon, format_strategy_for_prompt
 
 
@@ -36,11 +37,19 @@ def build_keyword_strategy_user_prompt(
             f"- Bullet: {' | '.join(generated_frontend_content.bullets or [])}\n"
             f"- Descrizione: {generated_frontend_content.description or ''}\n"
         )
+    remaining = remaining_backend_opportunities(
+        plan=strategy.confirmed_keyword_plan,
+        frontend_content=generated_frontend_content,
+    )
+    remaining_block = ""
+    if remaining:
+        remaining_block = "\nOpportunita semantiche residue da privilegiare: " + ", ".join(remaining) + "\n"
     return (
         f"{base}\n\n"
         f"Limite approssimativo: resta entro ~{max_bytes} byte UTF-8 (stringa più corta se necessario).\n"
         f"{addon}\n"
         f"{frontend_block}\n"
+        f"{remaining_block}\n"
         "Non ripetere keyword identiche consecutive; rimuovi ridondanze. "
         "Priorita: copri spazio semantico non ancora saturo nei contenuti frontend. "
         "Rispondi con una sola riga di termini separati da spazio."

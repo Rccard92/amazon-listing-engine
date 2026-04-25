@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { SectionOutputPanel } from "@/components/listing-generation/section-output-panel";
 import { StrategySummaryPanel } from "@/components/listing-generation/strategy-summary-panel";
 import { Button } from "@/components/ui/button";
+import { fetchFeatureFlags } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   emptyStrategy,
@@ -99,6 +100,20 @@ function ListingGenerazioneContent() {
   const [valBullets, setValBullets] = useState<ValidationReport | null>(null);
   const [valDesc, setValDesc] = useState<ValidationReport | null>(null);
   const [valKw, setValKw] = useState<ValidationReport | null>(null);
+  const [aiDebugEnabled, setAiDebugEnabled] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFeatures() {
+      const features = await fetchFeatureFlags();
+      if (cancelled || !features) return;
+      setAiDebugEnabled(Boolean(features.ai_debug_trace_enabled));
+    }
+    void loadFeatures();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -363,7 +378,7 @@ function ListingGenerazioneContent() {
           })}
         </div>
         <div className="mt-4 rounded-2xl border border-slate-200/80 bg-white/90 p-5">
-          <SectionOutputPanel strategy={strategy} {...panelProps} />
+          <SectionOutputPanel strategy={strategy} aiDebugEnabled={aiDebugEnabled} {...panelProps} />
         </div>
         {workItemId ? (
           <div className="mt-4 flex flex-wrap items-center gap-3">
