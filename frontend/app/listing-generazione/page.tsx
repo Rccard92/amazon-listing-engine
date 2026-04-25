@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { SectionOutputPanel } from "@/components/listing-generation/section-output-panel";
 import { StrategySummaryPanel } from "@/components/listing-generation/strategy-summary-panel";
@@ -80,6 +80,7 @@ function getSectionsFromWorkItem(raw: Record<string, unknown> | undefined): Part
 const SECTION_KEYS: ListingSectionType[] = ["seo_title", "bullet_points", "description", "keyword_strategy"];
 
 function ListingGenerazioneContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const workItemId = searchParams.get("workItemId");
 
@@ -215,14 +216,14 @@ function ListingGenerazioneContent() {
     void persistSection(section, result);
   };
 
-  async function saveCurrentDraft() {
-    if (!workItemId) return;
+  async function saveCurrentDraft(): Promise<boolean> {
+    if (!workItemId) return false;
     setSaving(true);
     setSaveHint(null);
     const item = await getWorkItem(workItemId);
     if (!item) {
       setSaving(false);
-      return;
+      return false;
     }
     const prev = (item.generated_output || {}) as Record<string, unknown>;
     const lg =
@@ -245,6 +246,14 @@ function ListingGenerazioneContent() {
     });
     setSaving(false);
     setSaveHint(p.actions.savedOutput);
+    return true;
+  }
+
+  async function handleGoBack() {
+    if (!workItemId) return;
+    const saved = await saveCurrentDraft();
+    if (!saved) return;
+    router.push(`/keyword-intelligence?workItemId=${workItemId}`);
   }
 
   const panelProps =
@@ -382,6 +391,16 @@ function ListingGenerazioneContent() {
         </div>
         {workItemId ? (
           <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={saving}
+              onClick={() => void handleGoBack()}
+              className="sm:mr-auto"
+            >
+              Indietro
+            </Button>
             <Button type="button" variant="secondary" size="sm" disabled={saving} onClick={() => void saveCurrentDraft()}>
               {p.actions.saveOutput}
             </Button>

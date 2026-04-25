@@ -137,15 +137,15 @@ function KeywordIntelligenceInner() {
     setAnalysis(response.intelligence);
   }
 
-  async function savePlan() {
-    if (!workItemId || !analysis) return;
+  async function savePlan(): Promise<boolean> {
+    if (!workItemId || !analysis) return false;
     setBusy(true);
     setHint(null);
     const loaded = await getWorkItemResult(workItemId);
     if (!loaded.ok) {
       setBusy(false);
       setError(`Impossibile leggere work item (${loaded.status}): ${loaded.error.message}`);
-      return;
+      return false;
     }
     const nextInput = {
       ...(loaded.data.input_data as Record<string, unknown>),
@@ -158,9 +158,24 @@ function KeywordIntelligenceInner() {
     setBusy(false);
     if (!updated.ok) {
       setError(`Salvataggio Keyword Intelligence fallito (${updated.status}): ${updated.error.message}`);
-      return;
+      return false;
     }
     setHint(k.saved);
+    return true;
+  }
+
+  async function handleGoBack() {
+    if (!workItemId) return;
+    const saved = await savePlan();
+    if (!saved) return;
+    router.push(`/arricchimento-strategico?workItemId=${workItemId}`);
+  }
+
+  async function handleGoGenerate() {
+    if (!workItemId) return;
+    const saved = await savePlan();
+    if (!saved) return;
+    router.push(`/listing-generazione?workItemId=${workItemId}`);
   }
 
   return (
@@ -258,11 +273,14 @@ function KeywordIntelligenceInner() {
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={() => void handleGoBack()} disabled={busy} className="sm:mr-auto">
+              Indietro
+            </Button>
             {hint ? <span className="text-xs text-slate-500">{hint}</span> : null}
             <Button type="button" variant="secondary" onClick={() => void savePlan()} disabled={busy}>
               {k.save}
             </Button>
-            <Button type="button" onClick={() => router.push(`/listing-generazione?workItemId=${workItemId ?? ""}`)} disabled={busy}>
+            <Button type="button" onClick={() => void handleGoGenerate()} disabled={busy}>
               {k.goGenerate}
             </Button>
           </div>

@@ -105,15 +105,15 @@ function EnrichmentInner() {
     setDebugTrace(res.response.debug_trace ?? null);
   }
 
-  async function saveEnrichment(nextStatus?: "draft" | "in_progress" | "completed") {
-    if (!workItemId) return;
+  async function saveEnrichment(nextStatus?: "draft" | "in_progress" | "completed"): Promise<boolean> {
+    if (!workItemId) return false;
     setSaving(true);
     setSaveHint(null);
     const loaded = await getWorkItemResult(workItemId);
     if (!loaded.ok) {
       setAiError(`Impossibile salvare arricchimento (${loaded.status}): ${loaded.error.message}`);
       setSaving(false);
-      return;
+      return false;
     }
     const item = loaded.data;
     const input = { ...(item.input_data as Record<string, unknown>), [STRATEGIC_ENRICHMENT_KEY]: enrichment };
@@ -124,17 +124,26 @@ function EnrichmentInner() {
     if (!updated.ok) {
       setAiError(`Salvataggio arricchimento fallito (${updated.status}): ${updated.error.message}`);
       setSaving(false);
-      return;
+      return false;
     }
     setSaving(false);
     setAiError(null);
     setSaveHint(m.savedEnrichment);
+    return true;
   }
 
   async function handleGoGenerate() {
     if (!workItemId) return;
-    await saveEnrichment("in_progress");
+    const saved = await saveEnrichment("in_progress");
+    if (!saved) return;
     router.push(`/keyword-intelligence?workItemId=${workItemId}`);
+  }
+
+  async function handleGoBack() {
+    if (!workItemId) return;
+    const saved = await saveEnrichment("in_progress");
+    if (!saved) return;
+    router.push(`/new-listing?workItemId=${workItemId}`);
   }
 
   function setBeneficiText(t: string) {
@@ -233,6 +242,9 @@ function EnrichmentInner() {
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <Button type="button" variant="ghost" onClick={() => void handleGoBack()} disabled={saving} className="sm:mr-auto">
+                Indietro
+              </Button>
               <Button type="button" variant="secondary" onClick={() => void saveEnrichment()} disabled={saving}>
                 {saving ? it.common.loading : m.saveEnrichment}
               </Button>

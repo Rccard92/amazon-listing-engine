@@ -100,15 +100,15 @@ function KeywordPlanningInner() {
     setPlanning(res.planning);
   }
 
-  async function save(nextRouteToGenerate: boolean) {
-    if (!workItemId) return;
+  async function save(nextRouteToGenerate: boolean): Promise<boolean> {
+    if (!workItemId) return false;
     setBusy(true);
     setHint(null);
     const loaded = await getWorkItemResult(workItemId);
     if (!loaded.ok) {
       setBusy(false);
       setError(`Impossibile leggere work item (${loaded.status}): ${loaded.error.message}`);
-      return;
+      return false;
     }
     const nextInput = {
       ...(loaded.data.input_data as Record<string, unknown>),
@@ -118,12 +118,20 @@ function KeywordPlanningInner() {
     setBusy(false);
     if (!updated.ok) {
       setError(`Salvataggio keyword planning fallito (${updated.status}): ${updated.error.message}`);
-      return;
+      return false;
     }
     setHint(p.saved);
     if (nextRouteToGenerate) {
       router.push(`/listing-generazione?workItemId=${workItemId}`);
     }
+    return true;
+  }
+
+  async function handleGoBack() {
+    if (!workItemId) return;
+    const saved = await save(false);
+    if (!saved) return;
+    router.push(`/arricchimento-strategico?workItemId=${workItemId}`);
   }
 
   return (
@@ -190,6 +198,9 @@ function KeywordPlanningInner() {
           />
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
+          <Button type="button" variant="ghost" disabled={busy} onClick={() => void handleGoBack()} className="sm:mr-auto">
+            Indietro
+          </Button>
           {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
           <Button type="button" variant="secondary" disabled={busy} onClick={() => void save(false)}>
             {p.save}
