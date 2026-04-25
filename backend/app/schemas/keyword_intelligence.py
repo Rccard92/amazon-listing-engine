@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -137,6 +137,8 @@ class KeywordIntelligenceRequest(BaseModel):
     enable_ai_context_builder: bool = False
     enable_deterministic_veto: bool = True
     enable_ai_refinement: bool = False
+    forensic_fingerprint: str | None = None
+    forensic_input_meta: dict[str, Any] = Field(default_factory=dict)
 
 
 class KeywordIntelligenceResponse(BaseModel):
@@ -150,4 +152,5 @@ class KeywordIntelligenceResponse(BaseModel):
     keyword_context: ProductKeywordContext | None = None
     veto_summary: dict[str, int] | None = None
     refinement_summary: dict[str, int] | None = None
+    forensic_trace: dict[str, Any] | None = None
     debug_trace: DebugTrace | None = None

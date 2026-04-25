@@ -26,6 +26,7 @@ class VetoDecision:
 @dataclass
 class KeywordDeterministicVetoEngine:
     """Blocca keyword incoerenti prima del refinement."""
+    last_keyword_decisions: list[dict[str, str | bool | None]] | None = None
 
     def evaluate(self, *, keyword: str, context: ProductKeywordContext) -> VetoDecision:
         kw = _norm(keyword)
@@ -84,7 +85,9 @@ class KeywordDeterministicVetoEngine:
     ) -> tuple[list[KeywordClassificationItem], dict[str, int]]:
         out: list[KeywordClassificationItem] = []
         summary = {"allowed": 0, "verify": 0, "excluded": 0}
+        decisions: list[dict[str, str | bool | None]] = []
         for item in items:
+            pre_category = item.category
             decision = self.evaluate(keyword=item.keyword, context=context)
             if decision.decision == "exclude":
                 item.category = "OFF_TARGET"
@@ -101,5 +104,17 @@ class KeywordDeterministicVetoEngine:
                 summary["verify"] += 1
             else:
                 summary["allowed"] += 1
+            decisions.append(
+                {
+                    "keyword": item.keyword,
+                    "pre_category": pre_category,
+                    "post_category": item.category,
+                    "decision": decision.decision,
+                    "reason_type": decision.reason_type,
+                    "reason": decision.rationale,
+                    "passed_to_refinement": decision.decision == "allow",
+                }
+            )
             out.append(item)
+        self.last_keyword_decisions = decisions
         return out, summary

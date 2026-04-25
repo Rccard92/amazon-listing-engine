@@ -14,6 +14,7 @@ def test_features_debug_trace_default_off(monkeypatch) -> None:
     assert response.json()["ai_debug_trace_enabled"] is False
     assert response.json()["keyword_three_layer_enabled"] is False
     assert response.json()["keyword_deterministic_veto_enabled"] is True
+    assert response.json()["keyword_forensic_debug_enabled"] is False
 
 
 def test_features_debug_trace_on(monkeypatch) -> None:
@@ -21,6 +22,7 @@ def test_features_debug_trace_on(monkeypatch) -> None:
     monkeypatch.setenv("ENABLE_KEYWORD_THREE_LAYER", "true")
     monkeypatch.setenv("ENABLE_KEYWORD_AI_CONTEXT_BUILDER", "true")
     monkeypatch.setenv("ENABLE_KEYWORD_AI_REFINEMENT", "true")
+    monkeypatch.setenv("KEYWORD_FORENSIC_DEBUG_ENABLED", "true")
     config.get_settings.cache_clear()
     client = TestClient(create_app())
     response = client.get("/api/v1/features")
@@ -29,3 +31,4 @@ def test_features_debug_trace_on(monkeypatch) -> None:
     assert response.json()["keyword_three_layer_enabled"] is True
     assert response.json()["keyword_ai_context_builder_enabled"] is True
     assert response.json()["keyword_ai_refinement_enabled"] is True
+    assert response.json()["keyword_forensic_debug_enabled"] is True

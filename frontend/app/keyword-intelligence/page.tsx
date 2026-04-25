@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { DebugTraceCollapsible } from "@/components/keyword-intelligence/debug-trace-collapsible";
 import { FinalKeywordPlanCard } from "@/components/keyword-intelligence/final-keyword-plan-card";
+import { ForensicKeywordTracePanel } from "@/components/keyword-intelligence/forensic-keyword-trace-panel";
 import { KeywordDecisionsBoard } from "@/components/keyword-intelligence/keyword-decisions-board";
 import { ProductInterpretationCard } from "@/components/keyword-intelligence/product-interpretation-card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,12 @@ type PersistedUploadState = {
   uploaded_at_iso: string | null;
 };
 
+type UploadRuntimeMeta = {
+  filename: string;
+  file_type: "csv" | "xlsx" | "unknown";
+  file_size_bytes: number;
+};
+
 function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
   return {
     schema_version: raw.schema_version ?? "v1",
@@ -58,6 +65,15 @@ function splitLines(value: string): string[] {
     .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function buildFingerprint(payload: Record<string, unknown>): string {
+  const raw = JSON.stringify(payload);
+  let hash = 0;
+  for (let i = 0; i < raw.length; i += 1) {
+    hash = (hash * 31 + raw.charCodeAt(i)) >>> 0;
+  }
+  return `fp_${hash.toString(16)}`;
 }
 
 async function parseCsvKeywords(file: File): Promise<{ keyword: string; source_row: number }[]> {
@@ -86,6 +102,7 @@ function KeywordIntelligenceInner() {
     parsed_rows_count: 0,
     uploaded_at_iso: null,
   });
+  const [uploadRuntimeMeta, setUploadRuntimeMeta] = useState<UploadRuntimeMeta[]>([]);
   const [analysis, setAnalysis] = useState<KeywordIntelligenceResponse | null>(null);
   const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -96,8 +113,11 @@ function KeywordIntelligenceInner() {
   const [contextBuilderEnabled, setContextBuilderEnabled] = useState(false);
   const [deterministicVetoEnabled, setDeterministicVetoEnabled] = useState(true);
   const [refinementEnabled, setRefinementEnabled] = useState(false);
+  const [forensicDebugEnabled, setForensicDebugEnabled] = useState(false);
   const [confirmPlanByUser, setConfirmPlanByUser] = useState(false);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [analysisSource, setAnalysisSource] = useState<"fresh" | "saved">("saved");
+  const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +129,7 @@ function KeywordIntelligenceInner() {
       setContextBuilderEnabled(Boolean(features.keyword_ai_context_builder_enabled));
       setDeterministicVetoEnabled(features.keyword_deterministic_veto_enabled !== false);
       setRefinementEnabled(Boolean(features.keyword_ai_refinement_enabled));
+      setForensicDebugEnabled(Boolean(features.keyword_forensic_debug_enabled));
     }
     void loadFeatures();
     return () => {
@@ -129,6 +150,7 @@ function KeywordIntelligenceInner() {
       const confirmedRaw = input[CONFIRMED_KEYWORD_PLAN_KEY];
       const uploadRaw = input[KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY];
       const manualSeedsRaw = input[KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY];
+      const savedMetaRaw = input["keyword_intelligence_meta"];
       if (typeof manualSeedsRaw === "string") setManualSeedsText(manualSeedsRaw);
       if (uploadRaw && typeof uploadRaw === "object" && !Array.isArray(uploadRaw)) {
         const parsedUpload = uploadRaw as {
@@ -153,7 +175,12 @@ function KeywordIntelligenceInner() {
           confirmed_keyword_plan: confirmedPlan,
           rules_applied: (input["keyword_intelligence_rules_applied"] as string) ?? confirmedPlan.rules_version ?? "keyword_intelligence_rules_v1",
         });
+        setAnalysisSource("saved");
         setConfirmPlanByUser(Boolean(confirmedPlan.confirmed_by_user));
+      }
+      if (savedMetaRaw && typeof savedMetaRaw === "object" && !Array.isArray(savedMetaRaw)) {
+        const meta = savedMetaRaw as { input_fingerprint?: string };
+        setSavedFingerprint(meta.input_fingerprint ?? null);
       }
     }
     void load();
@@ -165,13 +192,42 @@ function KeywordIntelligenceInner() {
   const manualSeeds = useMemo(() => splitLines(manualSeedsText), [manualSeedsText]);
   const hasUploadedFile = uploadState.files.length > 0;
   const uploadTimestamp = uploadState.uploaded_at_iso ? new Date(uploadState.uploaded_at_iso).toLocaleString("it-IT") : null;
+  const currentFingerprint = useMemo(
+    () =>
+      buildFingerprint({
+        manualSeeds,
+        uploadState,
+        clarifications: clarificationAnswers,
+        pipeline: {
+          threeLayerEnabled,
+          contextBuilderEnabled,
+          deterministicVetoEnabled,
+          refinementEnabled,
+        },
+      }),
+    [
+      manualSeeds,
+      uploadState,
+      clarificationAnswers,
+      threeLayerEnabled,
+      contextBuilderEnabled,
+      deterministicVetoEnabled,
+      refinementEnabled,
+    ],
+  );
 
   async function onFilesSelected(files: File[]) {
     const nextFiles: KeywordIntelligenceUploadedFile[] = files.map((f) => ({
       filename: f.name,
       file_type: f.name.toLowerCase().endsWith(".csv") ? "csv" : f.name.toLowerCase().endsWith(".xlsx") ? "xlsx" : "unknown",
     }));
+    const nextRuntimeMeta: UploadRuntimeMeta[] = files.map((f) => ({
+      filename: f.name,
+      file_type: f.name.toLowerCase().endsWith(".csv") ? "csv" : f.name.toLowerCase().endsWith(".xlsx") ? "xlsx" : "unknown",
+      file_size_bytes: f.size,
+    }));
     setUploadedFiles(nextFiles);
+    setUploadRuntimeMeta(nextRuntimeMeta);
 
     const csvRows: { keyword: string; source_row: number }[] = [];
     for (const file of files) {
@@ -195,6 +251,7 @@ function KeywordIntelligenceInner() {
   function onRemoveFile() {
     setUploadedFiles([]);
     setHeliumRows([]);
+    setUploadRuntimeMeta([]);
     setUploadState({ files: [], parsed_rows_count: 0, uploaded_at_iso: null });
   }
 
@@ -213,6 +270,23 @@ function KeywordIntelligenceInner() {
       enable_ai_context_builder: contextBuilderEnabled,
       enable_deterministic_veto: deterministicVetoEnabled,
       enable_ai_refinement: refinementEnabled,
+      forensic_fingerprint: currentFingerprint,
+      forensic_input_meta: {
+        file_ingestion: {
+          parsing_outcome: uploadedFiles.length ? "success" : "rows_preparsed_or_manual_only",
+          rows_parsed: heliumRows.length,
+          normalized_columns: ["keyword", "source_row"],
+          sample_keywords: heliumRows.slice(0, 8).map((row) => row.keyword),
+          files: uploadRuntimeMeta.length
+            ? uploadRuntimeMeta
+            : uploadState.files.map((file) => ({
+                filename: file.filename,
+                file_type: file.file_type,
+                file_size_bytes: null,
+              })),
+        },
+        saved_fingerprint: savedFingerprint,
+      },
     });
     setBusy(false);
     if (!response.ok) {
@@ -221,6 +295,7 @@ function KeywordIntelligenceInner() {
     }
     const normalizedPlan = normalizeConfirmedPlan(response.intelligence.confirmed_keyword_plan);
     setAnalysis({ ...response.intelligence, confirmed_keyword_plan: normalizedPlan });
+    setAnalysisSource("fresh");
     setConfirmPlanByUser(Boolean(normalizedPlan.confirmed_by_user));
   }
 
@@ -244,6 +319,11 @@ function KeywordIntelligenceInner() {
       [KEYWORD_INTELLIGENCE_CONTEXT_KEY]: analysis.keyword_context ?? null,
       [KEYWORD_INTELLIGENCE_VETO_SUMMARY_KEY]: analysis.veto_summary ?? null,
       [KEYWORD_INTELLIGENCE_PIPELINE_VERSION_KEY]: analysis.pipeline_applied ?? "legacy",
+      keyword_intelligence_meta: {
+        input_fingerprint: currentFingerprint,
+        analysis_source: analysisSource,
+        computed_at_iso: new Date().toISOString(),
+      },
       [KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY]: uploadState,
       [KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY]: manualSeedsText,
     };
@@ -409,6 +489,14 @@ function KeywordIntelligenceInner() {
               <div className="mt-4 space-y-4">
                 <ProductInterpretationCard profile={analysis.product_intelligence_profile} compact={false} />
                 {aiDebugEnabled ? <DebugTraceCollapsible trace={analysis.debug_trace ?? null} /> : null}
+                {forensicDebugEnabled ? (
+                  <ForensicKeywordTracePanel
+                    trace={analysis.forensic_trace ?? null}
+                    analysisSource={analysisSource}
+                    currentFingerprint={currentFingerprint}
+                    savedFingerprint={savedFingerprint}
+                  />
+                ) : null}
               </div>
             ) : null}
           </section>

@@ -43,6 +43,7 @@ export type FeatureFlags = {
   keyword_ai_context_builder_enabled?: boolean;
   keyword_deterministic_veto_enabled?: boolean;
   keyword_ai_refinement_enabled?: boolean;
+  keyword_forensic_debug_enabled?: boolean;
 };
 
 export async function fetchHealthLive(): Promise<HealthLive | null> {

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import time
 
 from app.schemas.keyword_intelligence import (
     KeywordIntelligenceRequest,
@@ -65,6 +67,7 @@ class KeywordContextBuilderService:
     """Costruisce ProductKeywordContext con fallback deterministico."""
 
     llm: OpenAIListingLLMClient | None = None
+    last_forensic_trace: dict | None = None
 
     def build(
         self,
@@ -74,12 +77,52 @@ class KeywordContextBuilderService:
         request: KeywordIntelligenceRequest,
         enable_ai: bool,
     ) -> ProductKeywordContext:
+        started = time.perf_counter()
+        requested_at = datetime.now(timezone.utc).isoformat()
         if enable_ai:
             try:
-                return self._build_with_ai(brief=brief, enrichment=enrichment, request=request)
-            except Exception:
-                pass
-        return self._build_fallback(brief=brief, enrichment=enrichment, request=request)
+                out = self._build_with_ai(brief=brief, enrichment=enrichment, request=request)
+                self.last_forensic_trace = {
+                    "openai_called": True,
+                    "mode": "ai",
+                    "requested_at": requested_at,
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                    "duration_ms": int((time.perf_counter() - started) * 1000),
+                    "model_name": "openai_listing_model_or_openai_model",
+                    "success": True,
+                    "fallback_used": False,
+                    "output": out.model_dump(mode="json"),
+                }
+                return out
+            except Exception as exc:
+                out = self._build_fallback(brief=brief, enrichment=enrichment, request=request)
+                self.last_forensic_trace = {
+                    "openai_called": True,
+                    "mode": "fallback",
+                    "requested_at": requested_at,
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                    "duration_ms": int((time.perf_counter() - started) * 1000),
+                    "model_name": "openai_listing_model_or_openai_model",
+                    "success": False,
+                    "fallback_used": True,
+                    "fallback_reason": str(exc),
+                    "output": out.model_dump(mode="json"),
+                }
+                return out
+        out = self._build_fallback(brief=brief, enrichment=enrichment, request=request)
+        self.last_forensic_trace = {
+            "openai_called": False,
+            "mode": "fallback",
+            "requested_at": requested_at,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "duration_ms": int((time.perf_counter() - started) * 1000),
+            "model_name": None,
+            "success": True,
+            "fallback_used": True,
+            "fallback_reason": "ai_context_builder_disabled",
+            "output": out.model_dump(mode="json"),
+        }
+        return out
 
     def _build_with_ai(
         self,

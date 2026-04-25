@@ -182,6 +182,20 @@ export type KeywordIntelligenceRequest = {
   enable_ai_context_builder?: boolean;
   enable_deterministic_veto?: boolean;
   enable_ai_refinement?: boolean;
+  forensic_fingerprint?: string | null;
+  forensic_input_meta?: Record<string, unknown>;
+};
+
+export type KeywordForensicTrace = {
+  trace_id: string;
+  started_at: string;
+  finished_at: string;
+  duration_ms: number;
+  pipeline_mode: string;
+  stage_outcomes: Record<string, unknown>;
+  fallbacks: Array<Record<string, unknown>>;
+  keywords_debug_map: Array<Record<string, unknown>>;
+  freshness: Record<string, unknown>;
 };
 
 export type KeywordIntelligenceResponse = {
@@ -195,6 +209,7 @@ export type KeywordIntelligenceResponse = {
   keyword_context?: ProductKeywordContext | null;
   veto_summary?: Record<string, number> | null;
   refinement_summary?: Record<string, number> | null;
+  forensic_trace?: KeywordForensicTrace | null;
   debug_trace?: AiDebugTrace | null;
 };
 

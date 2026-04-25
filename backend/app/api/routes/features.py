@@ -17,4 +17,5 @@ def get_features() -> FeaturesResponse:
         keyword_ai_context_builder_enabled=settings.enable_keyword_ai_context_builder,
         keyword_deterministic_veto_enabled=settings.enable_keyword_deterministic_veto,
         keyword_ai_refinement_enabled=settings.enable_keyword_ai_refinement,
+        keyword_forensic_debug_enabled=settings.keyword_forensic_debug_enabled,
     )

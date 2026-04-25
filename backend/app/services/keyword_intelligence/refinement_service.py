@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import time
 
 from app.schemas.keyword_intelligence import KeywordClassificationItem, ProductKeywordContext
 from app.services.listing_generation.openai_llm_client import OpenAIListingLLMClient
@@ -38,6 +40,7 @@ class KeywordRefinementService:
     """Rifinisce classificazioni allowed con AI; fallback deterministico."""
 
     llm: OpenAIListingLLMClient | None = None
+    last_forensic_trace: dict | None = None
 
     def refine(
         self,
@@ -46,6 +49,8 @@ class KeywordRefinementService:
         context: ProductKeywordContext,
         enable_ai: bool,
     ) -> tuple[list[KeywordClassificationItem], dict[str, int]]:
+        started = time.perf_counter()
+        requested_at = datetime.now(timezone.utc).isoformat()
         allowed_items = [
             item
             for item in items
@@ -53,10 +58,41 @@ class KeywordRefinementService:
             and item.category not in ("OFF_TARGET", "NEGATIVE_KEYWORD", "BRANDED_COMPETITOR", "VERIFY_PRODUCT_FEATURE")
         ]
         if not enable_ai or not allowed_items:
+            self.last_forensic_trace = {
+                "openai_called": False,
+                "mode": "disabled_or_empty",
+                "requested_at": requested_at,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "duration_ms": int((time.perf_counter() - started) * 1000),
+                "allowed_candidates_count": len(allowed_items),
+                "keywords_passed": [item.keyword for item in allowed_items[:120]],
+                "result_items": [],
+            }
             return items, {"refined": 0, "fallback": len(allowed_items)}
         try:
             refined_map = self._refine_with_ai(allowed_items=allowed_items, context=context)
-        except Exception:
+            self.last_forensic_trace = {
+                "openai_called": True,
+                "mode": "ai",
+                "requested_at": requested_at,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "duration_ms": int((time.perf_counter() - started) * 1000),
+                "allowed_candidates_count": len(allowed_items),
+                "keywords_passed": [item.keyword for item in allowed_items[:120]],
+                "result_items": list(refined_map.values())[:120],
+            }
+        except Exception as exc:
+            self.last_forensic_trace = {
+                "openai_called": True,
+                "mode": "fallback",
+                "requested_at": requested_at,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "duration_ms": int((time.perf_counter() - started) * 1000),
+                "allowed_candidates_count": len(allowed_items),
+                "keywords_passed": [item.keyword for item in allowed_items[:120]],
+                "fallback_reason": str(exc),
+                "result_items": [],
+            }
             return items, {"refined": 0, "fallback": len(allowed_items)}
 
         for item in items:
@@ -98,6 +134,7 @@ class KeywordRefinementService:
             if not keyword:
                 continue
             out[keyword] = {
+                "keyword": keyword,
                 "category": str(item.get("category") or ""),
                 "recommended_usage": str(item.get("recommended_usage") or ""),
                 "priority": str(item.get("priority") or ""),

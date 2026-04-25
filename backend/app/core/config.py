@@ -133,6 +133,18 @@ class Settings(BaseSettings):
         default=True,
         description="Calcola refinement in shadow mode senza alterare output finale.",
     )
+    keyword_forensic_debug_enabled: bool = Field(
+        default=False,
+        description="Abilita forensic debug esteso per Keyword Intelligence.",
+    )
+    keyword_forensic_debug_full_keyword_map: bool = Field(
+        default=False,
+        description="Se true include reason map completa per tutte le keyword.",
+    )
+    keyword_forensic_debug_sample_size: int = Field(
+        default=50,
+        description="Numero keyword da includere in reason map quando full map e' disattivata.",
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property

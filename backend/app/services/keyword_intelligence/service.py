@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
 import re
 from dataclasses import dataclass
+from uuid import uuid4
 
 from app.core.config import get_settings
 from app.core.keyword_intelligence_rules import get_keyword_intelligence_rules_bundle
@@ -97,9 +102,11 @@ class KeywordIntelligenceService:
         request: KeywordIntelligenceRequest,
         include_debug_trace: bool = False,
     ) -> KeywordIntelligenceResponse:
+        run_started = datetime.now(timezone.utc)
         trace = DebugTraceCollector(step="keyword_intelligence", enabled=include_debug_trace)
         ctx = _Context(brief=brief, enrichment=enrichment, request=request)
         settings = get_settings()
+        forensic_enabled = bool(settings.keyword_forensic_debug_enabled and request.include_debug_trace)
         pipeline_applied = (
             "three_layer"
             if settings.enable_keyword_three_layer and request.pipeline_mode == "three_layer"
@@ -211,6 +218,92 @@ class KeywordIntelligenceService:
             trace.add_block(title="Input usati", content=f"File: {len(request.uploaded_files)} · Righe: {len(request.helium10_rows)}")
             trace.add_block(title="Decisioni AI", content=f"Accettate: {len(accepted)} · Escluse: {len(excluded)} · Verifica: {len(verify)}")
             trace.add_block(title="Output finale", content=f"Primaria: {plan.keyword_primaria_finale}")
+        forensic_trace = None
+        if forensic_enabled:
+            rule_bundle = get_keyword_intelligence_rules_bundle()
+            rules_path = Path(rule_bundle.source_path)
+            rules_hash = ""
+            rules_mtime = None
+            try:
+                text = rules_path.read_text(encoding="utf-8")
+                rules_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+                rules_mtime = datetime.fromtimestamp(rules_path.stat().st_mtime, tz=timezone.utc).isoformat()
+            except Exception:
+                pass
+            file_meta = request.forensic_input_meta.get("file_ingestion") if isinstance(request.forensic_input_meta, dict) else {}
+            keywords_map = self._veto_engine.last_keyword_decisions or []
+            sample_size = max(1, int(settings.keyword_forensic_debug_sample_size))
+            if not settings.keyword_forensic_debug_full_keyword_map:
+                keywords_map = keywords_map[:sample_size]
+            freshness = {
+                "analysis_source": "fresh_run",
+                "input_fingerprint": request.forensic_fingerprint,
+                "saved_fingerprint": request.forensic_input_meta.get("saved_fingerprint") if isinstance(request.forensic_input_meta, dict) else None,
+                "is_stale": (
+                    bool(request.forensic_input_meta.get("saved_fingerprint"))
+                    and request.forensic_fingerprint != request.forensic_input_meta.get("saved_fingerprint")
+                )
+                if isinstance(request.forensic_input_meta, dict)
+                else False,
+            }
+            forensic_trace = {
+                "trace_id": str(uuid4()),
+                "started_at": run_started.isoformat(),
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "duration_ms": int((datetime.now(timezone.utc) - run_started).total_seconds() * 1000),
+                "pipeline_mode": pipeline_applied,
+                "stage_outcomes": {
+                    "file_ingestion": {
+                        "file_detected": bool(request.uploaded_files),
+                        "files": [f.model_dump(mode="json") for f in request.uploaded_files],
+                        "rows_received": len(request.helium10_rows),
+                        "rows_valid": len([r for r in request.helium10_rows if (r.keyword or "").strip()]),
+                        "parsing": file_meta or {"outcome": "rows_preparsed"},
+                    },
+                    "rules_loading": {
+                        "rules_path": rule_bundle.source_path,
+                        "rules_version": rule_bundle.rules_version,
+                        "rules_hash": rules_hash,
+                        "rules_file_mtime": rules_mtime,
+                        "fallback_default_rules_used": False,
+                        "dogma_modules_loaded": ["DOGMA_GLOBAL.md", "DOGMA_KEYWORD_STRATEGY.md"],
+                    },
+                    "ai_context_builder": self._context_builder.last_forensic_trace,
+                    "veto_screening": {
+                        "enabled": use_veto,
+                        "summary": veto_summary or {"allowed": len(classifications), "verify": 0, "excluded": 0},
+                    },
+                    "ai_refinement": {
+                        "enabled": use_refinement,
+                        "shadow_mode": settings.enable_keyword_refinement_shadow_mode,
+                        "summary": refinement_summary,
+                        "trace": self._refinement_service.last_forensic_trace,
+                    },
+                    "final_mapping": {
+                        "content_keywords": plan.parole_da_spingere_nel_frontend,
+                        "backend_keywords": plan.parole_da_tenere_per_backend,
+                        "verify_keywords": [
+                            item.keyword
+                            for item in plan.classificazioni_confermate
+                            if item.category == "VERIFY_PRODUCT_FEATURE" or item.required_user_confirmation
+                        ],
+                        "excluded_keywords": [
+                            {"keyword": item.keyword, "reason": item.excluded_reason_type}
+                            for item in plan.keyword_escluse_definitivamente
+                        ],
+                    },
+                },
+                "fallbacks": [
+                    {
+                        "stage": "context_builder",
+                        "reason": self._context_builder.last_forensic_trace.get("fallback_reason"),
+                    }
+                ]
+                if self._context_builder.last_forensic_trace and self._context_builder.last_forensic_trace.get("fallback_used")
+                else [],
+                "keywords_debug_map": keywords_map,
+                "freshness": freshness,
+            }
         return KeywordIntelligenceResponse(
             product_intelligence_profile=profile,
             keyword_classifications=classifications,
@@ -222,6 +315,7 @@ class KeywordIntelligenceService:
             keyword_context=keyword_context if pipeline_applied == "three_layer" else None,
             veto_summary=veto_summary,
             refinement_summary=refinement_summary,
+            forensic_trace=forensic_trace,
             debug_trace=trace.build(),
         )
 

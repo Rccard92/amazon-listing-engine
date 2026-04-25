@@ -167,3 +167,32 @@ def test_keyword_intelligence_three_layer_pipeline_metadata(monkeypatch) -> None
     assert out.veto_summary is not None
     assert out.confirmed_keyword_plan.pipeline_metadata is not None
     assert out.confirmed_keyword_plan.pipeline_metadata["deterministic_veto"] is True
+
+
+def test_keyword_intelligence_forensic_trace_enabled(monkeypatch) -> None:
+    monkeypatch.setenv("ENABLE_KEYWORD_THREE_LAYER", "true")
+    monkeypatch.setenv("ENABLE_KEYWORD_AI_CONTEXT_BUILDER", "false")
+    monkeypatch.setenv("ENABLE_KEYWORD_AI_REFINEMENT", "false")
+    monkeypatch.setenv("KEYWORD_FORENSIC_DEBUG_ENABLED", "true")
+    from app.core import config
+
+    config.get_settings.cache_clear()
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(nome_prodotto="Barbecue gas", categoria="Giardino", keyword_primarie=["barbecue gas"])
+    req = KeywordIntelligenceRequest(
+        include_debug_trace=True,
+        pipeline_mode="three_layer",
+        enable_deterministic_veto=True,
+        forensic_fingerprint="fp_test",
+        forensic_input_meta={"saved_fingerprint": "fp_old"},
+        helium10_rows=[
+            {"keyword": "weber barbecue a gas"},
+            {"keyword": "barbecue a pellet da esterno"},
+            {"keyword": "barbecue gas da esterno"},
+        ],
+    )
+    out = service.run_with_trace(brief=brief, enrichment=None, request=req, include_debug_trace=True)
+    assert out.forensic_trace is not None
+    assert out.forensic_trace["pipeline_mode"] == "three_layer"
+    assert "stage_outcomes" in out.forensic_trace
+    assert "keywords_debug_map" in out.forensic_trace

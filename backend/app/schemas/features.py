@@ -9,3 +9,4 @@ class FeaturesResponse(BaseModel):
     keyword_ai_context_builder_enabled: bool = False
     keyword_deterministic_veto_enabled: bool = True
     keyword_ai_refinement_enabled: bool = False
+    keyword_forensic_debug_enabled: bool = False
