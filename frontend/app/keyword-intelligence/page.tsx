@@ -14,6 +14,7 @@ import { UploadDropzone } from "@/components/ui/upload-dropzone";
 import { fetchFeatureFlags } from "@/lib/api";
 import { it } from "@/lib/i18n/it";
 import {
+  type AdjustedKeywordItem,
   CONFIRMED_KEYWORD_PLAN_KEY,
   KEYWORD_CLARIFICATIONS_KEY,
   KEYWORD_INTELLIGENCE_KEY,
@@ -23,6 +24,7 @@ import {
   type KeywordClassificationItem,
   type KeywordIntelligenceResponse,
   type KeywordIntelligenceUploadedFile,
+  type KeywordUserEdits,
 } from "@/lib/listing-generation";
 import { getWorkItemResult, updateWorkItemResult } from "@/lib/work-items";
 
@@ -34,6 +36,7 @@ const KEYWORD_INTELLIGENCE_VETO_SUMMARY_KEY = "keyword_intelligence_veto_summary
 const KEYWORD_INTELLIGENCE_PIPELINE_VERSION_KEY = "keyword_intelligence_pipeline_version";
 const KEYWORD_INTELLIGENCE_ROWS_KEY = "keyword_intelligence_helium_rows";
 const KEYWORD_INTELLIGENCE_FORENSIC_TRACE_KEY = "keyword_intelligence_forensic_trace";
+const KEYWORD_INTELLIGENCE_USER_EDITS_KEY = "keyword_intelligence_user_edits";
 
 type PersistedUploadState = {
   files: KeywordIntelligenceUploadedFile[];
@@ -62,6 +65,11 @@ type KeywordRunMeta = {
   reason_if_fallback_used: string | null;
 };
 
+const EMPTY_USER_EDITS: KeywordUserEdits = {
+  additions: [],
+  exclusions: [],
+};
+
 function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
   return {
     schema_version: raw.schema_version ?? "v1",
@@ -82,6 +90,110 @@ function splitLines(value: string): string[] {
     .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function normalizeUserEdits(raw: unknown): KeywordUserEdits {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ...EMPTY_USER_EDITS };
+  const candidate = raw as { additions?: unknown; exclusions?: unknown };
+  const additions = Array.isArray(candidate.additions)
+    ? candidate.additions.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim())
+    : [];
+  const exclusions = Array.isArray(candidate.exclusions)
+    ? candidate.exclusions
+        .map((item) => {
+          if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+          const row = item as { keyword?: unknown };
+          if (typeof row.keyword !== "string" || !row.keyword.trim()) return null;
+          return { keyword: row.keyword.trim() };
+        })
+        .filter((item): item is { keyword: string } => Boolean(item))
+    : [];
+  return { additions, exclusions };
+}
+
+function applyUserEditsToPlan(basePlan: ConfirmedKeywordPlan, userEdits: KeywordUserEdits): {
+  adjustedPlan: ConfirmedKeywordPlan;
+  activeKeywords: AdjustedKeywordItem[];
+  excludedKeywords: AdjustedKeywordItem[];
+} {
+  const excludedSet = new Set(userEdits.exclusions.map((item) => item.keyword.toLowerCase()));
+  const map = new Map<string, AdjustedKeywordItem>();
+
+  for (const keyword of basePlan.parole_da_spingere_nel_frontend) {
+    const key = keyword.trim().toLowerCase();
+    if (!key) continue;
+    map.set(key, {
+      keyword: keyword.trim(),
+      channel: "frontend",
+      origin: "ai",
+    });
+  }
+  for (const keyword of basePlan.parole_da_tenere_per_backend) {
+    const key = keyword.trim().toLowerCase();
+    if (!key) continue;
+    const existing = map.get(key);
+    if (existing) {
+      existing.channel = existing.channel === "frontend" ? "both" : existing.channel;
+    } else {
+      map.set(key, { keyword: keyword.trim(), channel: "backend", origin: "ai" });
+    }
+  }
+  for (const keyword of userEdits.additions) {
+    const key = keyword.trim().toLowerCase();
+    if (!key) continue;
+    const existing = map.get(key);
+    if (existing) {
+      existing.origin = "manual";
+      existing.channel = "both";
+    } else {
+      map.set(key, { keyword: keyword.trim(), channel: "both", origin: "manual" });
+    }
+  }
+
+  const activeKeywords: AdjustedKeywordItem[] = [];
+  const excludedKeywords: AdjustedKeywordItem[] = [];
+  for (const item of map.values()) {
+    if (excludedSet.has(item.keyword.toLowerCase())) excludedKeywords.push(item);
+    else activeKeywords.push(item);
+  }
+
+  const frontendKeywords = activeKeywords
+    .filter((item) => item.channel === "frontend" || item.channel === "both")
+    .map((item) => item.keyword);
+  const backendKeywords = activeKeywords
+    .filter((item) => item.channel === "backend" || item.channel === "both")
+    .map((item) => item.keyword);
+
+  const baseExcluded = basePlan.keyword_escluse_definitivamente;
+  const nextExcluded = [...baseExcluded];
+  for (const item of excludedKeywords) {
+    const exists = nextExcluded.some((row) => row.keyword.toLowerCase() === item.keyword.toLowerCase());
+    if (!exists) {
+      nextExcluded.push({
+        keyword: item.keyword,
+        category: "NEGATIVE_KEYWORD",
+        priority: "medium",
+        recommended_usage: "exclude",
+        required_user_confirmation: false,
+        excluded_reason_type: null,
+        confidence: 1,
+        rationale: "Esclusa manualmente dall'utente",
+        source: item.origin === "manual" ? "manual_user" : "ai_adjusted_by_user",
+      });
+    }
+  }
+
+  return {
+    adjustedPlan: {
+      ...basePlan,
+      parole_da_spingere_nel_frontend: frontendKeywords,
+      parole_da_tenere_per_backend: backendKeywords,
+      keyword_secondarie_prioritarie: frontendKeywords.slice(0, 12),
+      keyword_escluse_definitivamente: nextExcluded,
+    },
+    activeKeywords,
+    excludedKeywords,
+  };
 }
 
 function buildFingerprint(payload: Record<string, unknown>): string {
@@ -136,6 +248,7 @@ function KeywordIntelligenceInner() {
   const [analysisSource, setAnalysisSource] = useState<"fresh" | "saved">("saved");
   const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null);
   const [lastRunMeta, setLastRunMeta] = useState<KeywordRunMeta | null>(null);
+  const [userEdits, setUserEdits] = useState<KeywordUserEdits>({ ...EMPTY_USER_EDITS });
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +284,8 @@ function KeywordIntelligenceInner() {
       const savedMetaRaw = input["keyword_intelligence_meta"];
       const rowsRaw = input[KEYWORD_INTELLIGENCE_ROWS_KEY];
       const forensicRaw = input[KEYWORD_INTELLIGENCE_FORENSIC_TRACE_KEY];
+      const editsRaw = input[KEYWORD_INTELLIGENCE_USER_EDITS_KEY];
+      setUserEdits(normalizeUserEdits(editsRaw));
       if (typeof manualSeedsRaw === "string") setManualSeedsText(manualSeedsRaw);
       if (uploadRaw && typeof uploadRaw === "object" && !Array.isArray(uploadRaw)) {
         const parsedUpload = uploadRaw as {
@@ -387,6 +502,7 @@ function KeywordIntelligenceInner() {
     }
     const normalizedPlan = normalizeConfirmedPlan(response.intelligence.confirmed_keyword_plan);
     setAnalysis({ ...response.intelligence, confirmed_keyword_plan: normalizedPlan });
+    setUserEdits({ ...EMPTY_USER_EDITS });
     setAnalysisSource("fresh");
     setConfirmPlanByUser(Boolean(normalizedPlan.confirmed_by_user));
     setLastRunMeta({
@@ -415,12 +531,14 @@ function KeywordIntelligenceInner() {
       setError(`Impossibile leggere work item (${loaded.status}): ${loaded.error.message}`);
       return false;
     }
+    const { adjustedPlan } = applyUserEditsToPlan(analysis.confirmed_keyword_plan, userEdits);
     const nextInput = {
       ...(loaded.data.input_data as Record<string, unknown>),
       [PRODUCT_INTELLIGENCE_PROFILE_KEY]: analysis.product_intelligence_profile,
       [KEYWORD_CLARIFICATIONS_KEY]: analysis.clarification_questions,
-      [CONFIRMED_KEYWORD_PLAN_KEY]: { ...analysis.confirmed_keyword_plan, confirmed_by_user: confirmPlanByUser },
-      keyword_intelligence_rules_applied: analysis.rules_applied ?? analysis.confirmed_keyword_plan.rules_version,
+      [CONFIRMED_KEYWORD_PLAN_KEY]: { ...adjustedPlan, confirmed_by_user: confirmPlanByUser },
+      [KEYWORD_INTELLIGENCE_USER_EDITS_KEY]: userEdits,
+      keyword_intelligence_rules_applied: analysis.rules_applied ?? adjustedPlan.rules_version,
       [KEYWORD_INTELLIGENCE_CONTEXT_KEY]: analysis.keyword_context ?? null,
       [KEYWORD_INTELLIGENCE_VETO_SUMMARY_KEY]: analysis.veto_summary ?? null,
       [KEYWORD_INTELLIGENCE_PIPELINE_VERSION_KEY]: analysis.pipeline_applied ?? "legacy",
@@ -433,7 +551,7 @@ function KeywordIntelligenceInner() {
         analysis_finished_at: analysis?.analysis_finished_at ?? lastRunMeta?.analysis_finished_at ?? null,
         analysis_model_used: analysis?.analysis_model_used ?? lastRunMeta?.analysis_model_used ?? null,
         rows_count: heliumRows.length,
-        rules_version: analysis.rules_applied ?? analysis.confirmed_keyword_plan.rules_version,
+        rules_version: analysis.rules_applied ?? adjustedPlan.rules_version,
         files_summary: uploadedFiles.map((f) => f.filename).join(", ") || null,
         final_source_of_truth: analysis.final_source_of_truth ?? lastRunMeta?.final_source_of_truth ?? "unknown",
         valid_ai_run: Boolean(analysis.valid_ai_run ?? lastRunMeta?.valid_ai_run),
@@ -494,6 +612,44 @@ function KeywordIntelligenceInner() {
     const saved = await savePlan();
     if (!saved) return;
     router.push(`/listing-generazione?workItemId=${workItemId}`);
+  }
+
+  const adjustedKeywordState = useMemo(() => {
+    if (!analysis) {
+      return {
+        adjustedPlan: null,
+        activeKeywords: [] as AdjustedKeywordItem[],
+        excludedKeywords: [] as AdjustedKeywordItem[],
+      };
+    }
+    return applyUserEditsToPlan(analysis.confirmed_keyword_plan, userEdits);
+  }, [analysis, userEdits]);
+
+  function onExcludeKeyword(keyword: string) {
+    const normalized = keyword.trim().toLowerCase();
+    if (!normalized) return;
+    setUserEdits((prev) => {
+      if (prev.exclusions.some((item) => item.keyword.toLowerCase() === normalized)) return prev;
+      return { ...prev, exclusions: [...prev.exclusions, { keyword: keyword.trim() }] };
+    });
+  }
+
+  function onRestoreKeyword(keyword: string) {
+    const normalized = keyword.trim().toLowerCase();
+    if (!normalized) return;
+    setUserEdits((prev) => ({
+      ...prev,
+      exclusions: prev.exclusions.filter((item) => item.keyword.toLowerCase() !== normalized),
+    }));
+  }
+
+  function onAddKeyword(keyword: string) {
+    const normalized = keyword.trim().toLowerCase();
+    if (!normalized) return;
+    setUserEdits((prev) => {
+      if (prev.additions.some((item) => item.toLowerCase() === normalized)) return prev;
+      return { ...prev, additions: [...prev.additions, keyword.trim()] };
+    });
   }
 
   return (
@@ -614,7 +770,17 @@ function KeywordIntelligenceInner() {
               )}
             </div>
           </section>
-          <FinalKeywordPlanCard plan={{ ...analysis.confirmed_keyword_plan, confirmed_by_user: confirmPlanByUser }} />
+          <FinalKeywordPlanCard
+            plan={{
+              ...(adjustedKeywordState.adjustedPlan ?? analysis.confirmed_keyword_plan),
+              confirmed_by_user: confirmPlanByUser,
+            }}
+            activeKeywords={adjustedKeywordState.activeKeywords}
+            excludedKeywords={adjustedKeywordState.excludedKeywords}
+            onExcludeKeyword={onExcludeKeyword}
+            onRestoreKeyword={onRestoreKeyword}
+            onAddKeyword={onAddKeyword}
+          />
           <section className="surface-card rounded-4xl p-6 sm:p-8">
             <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
               <label className="flex items-center gap-2 text-sm text-slate-800">

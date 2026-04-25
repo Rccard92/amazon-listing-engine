@@ -366,6 +366,9 @@ export const it = {
     finalPlan: {
       title: "Keyword selezionate per la scheda",
       summaryHint: "Queste keyword guidano titolo, bullet, descrizione e backend Amazon.",
+      addManualTitle: "Aggiungi keyword manuale",
+      addManualPlaceholder: "Inserisci una keyword da aggiungere al piano",
+      addManualAction: "+ Aggiungi keyword",
       primary: "Keyword principale",
       secondary: "Keyword secondarie prioritarie",
       frontendCore: "Keyword utili per titolo, bullet e descrizione",
@@ -375,6 +378,11 @@ export const it = {
       backendCopyHint: "Stringa pronta da copiare per i campi backend (Seller Central):",
       verify: "Keyword da verificare",
       excludedFinal: "Keyword escluse (tecnico)",
+      showExcluded: "Mostra keyword escluse",
+      hideExcluded: "Nascondi keyword escluse",
+      restore: "Ripristina",
+      originAi: "AI",
+      originManual: "Manuale",
       empty: "-",
     },
     sections: {

@@ -159,6 +159,20 @@ export type ConfirmedKeywordPlan = {
   vetoed_keywords?: KeywordClassificationItem[];
 };
 
+export type KeywordUserEdits = {
+  additions: string[];
+  exclusions: Array<{ keyword: string }>;
+};
+
+export type AdjustedKeywordChannel = "frontend" | "backend" | "both";
+export type AdjustedKeywordOrigin = "ai" | "manual";
+
+export type AdjustedKeywordItem = {
+  keyword: string;
+  channel: AdjustedKeywordChannel;
+  origin: AdjustedKeywordOrigin;
+};
+
 export type Helium10KeywordRow = {
   keyword: string;
   search_volume?: number | null;
