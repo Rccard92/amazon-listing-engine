@@ -108,6 +108,50 @@ class KeywordIntelligenceService:
         trace = DebugTraceCollector(step="keyword_intelligence", enabled=include_debug_trace)
         ctx = _Context(brief=brief, enrichment=enrichment, request=request)
         settings = get_settings()
+        route_called = True
+        if request.require_ai_execution:
+            if request.pipeline_mode != "three_layer":
+                raise AnalysisPipelineError(
+                    "OPENAI_REQUEST_FAILED",
+                    http_status=422,
+                    message_it="Analisi AI non eseguita",
+                    details="Pipeline richiesta non compatibile: imposta pipeline_mode='three_layer'.",
+                )
+            if not settings.enable_keyword_three_layer:
+                raise AnalysisPipelineError(
+                    "OPENAI_REQUEST_FAILED",
+                    http_status=503,
+                    message_it="Motore AI non disponibile",
+                    details="Feature flag backend disabilitata: ENABLE_KEYWORD_THREE_LAYER=false.",
+                )
+            if not (request.enable_ai_context_builder or request.enable_ai_refinement):
+                raise AnalysisPipelineError(
+                    "OPENAI_REQUEST_FAILED",
+                    http_status=422,
+                    message_it="Analisi AI non eseguita",
+                    details="Nessun layer AI richiesto nel payload (context_builder/refinement entrambi false).",
+                )
+            if request.enable_ai_context_builder and not settings.enable_keyword_ai_context_builder:
+                raise AnalysisPipelineError(
+                    "OPENAI_REQUEST_FAILED",
+                    http_status=503,
+                    message_it="Motore AI non disponibile",
+                    details="Feature flag backend disabilitata: ENABLE_KEYWORD_AI_CONTEXT_BUILDER=false.",
+                )
+            if request.enable_ai_refinement and not settings.enable_keyword_ai_refinement:
+                raise AnalysisPipelineError(
+                    "OPENAI_REQUEST_FAILED",
+                    http_status=503,
+                    message_it="Motore AI non disponibile",
+                    details="Feature flag backend disabilitata: ENABLE_KEYWORD_AI_REFINEMENT=false.",
+                )
+            if not (settings.openai_api_key or "").strip():
+                raise AnalysisPipelineError(
+                    "OPENAI_NOT_CONFIGURED",
+                    http_status=503,
+                    message_it="Motore AI non disponibile",
+                    details="OPENAI_API_KEY mancante.",
+                )
         forensic_enabled = bool(
             settings.keyword_forensic_debug_enabled and (request.include_forensic_trace or request.include_debug_trace)
         )
@@ -246,6 +290,16 @@ class KeywordIntelligenceService:
         elif ai_refinement_executed:
             analysis_model_used = model_name
         parsed_keyword_count = len([row for row in request.helium10_rows if (row.keyword or "").strip()])
+        file_parsed = parsed_keyword_count > 0
+        rules_loaded = bool(self._rules_version)
+        openai_client_called = bool(ai_context_builder_executed or ai_refinement_executed)
+        ai_context_builder_entered = bool(use_context_builder)
+        ai_context_builder_completed = bool(
+            context_trace.get("openai_called") and context_trace.get("mode") == "ai" and context_trace.get("success") is True
+        )
+        ai_refinement_entered = bool(use_refinement)
+        ai_refinement_completed = bool(refinement_trace.get("openai_called") and refinement_trace.get("mode") == "ai")
+        stale_result_used = False
         final_source_of_truth = (
             "ai"
             if (ai_context_builder_executed or ai_refinement_executed) and not fallback_used and bool(model_name)
@@ -253,6 +307,15 @@ class KeywordIntelligenceService:
             if fallback_used or pipeline_applied == "legacy"
             else "unknown"
         )
+        reason_if_ai_not_called = None
+        if not openai_client_called:
+            if pipeline_applied == "legacy":
+                reason_if_ai_not_called = "pipeline_legacy_or_three_layer_disabled"
+            elif not use_context_builder and not use_refinement:
+                reason_if_ai_not_called = "ai_layers_not_enabled_by_flags_or_payload"
+            else:
+                reason_if_ai_not_called = "ai_stage_entered_but_no_openai_call"
+        reason_if_fallback_used = fallback_reason if fallback_used else None
         valid_ai_run = final_source_of_truth == "ai"
         if request.require_ai_execution and not valid_ai_run:
             reason = fallback_reason or "Motore AI non disponibile o non eseguito."
@@ -373,6 +436,17 @@ class KeywordIntelligenceService:
                 "parsed_keyword_count": parsed_keyword_count,
                 "final_source_of_truth": final_source_of_truth,
                 "valid_ai_run": valid_ai_run,
+                "route_called": route_called,
+                "file_parsed": file_parsed,
+                "rules_loaded": rules_loaded,
+                "ai_context_builder_entered": ai_context_builder_entered,
+                "ai_context_builder_completed": ai_context_builder_completed,
+                "openai_client_called": openai_client_called,
+                "ai_refinement_entered": ai_refinement_entered,
+                "ai_refinement_completed": ai_refinement_completed,
+                "stale_result_used": stale_result_used,
+                "reason_if_ai_not_called": reason_if_ai_not_called,
+                "reason_if_fallback_used": reason_if_fallback_used,
                 "stage_outcomes": {
                     "file_ingestion": {
                         "file_detected": bool(request.uploaded_files),
@@ -451,6 +525,17 @@ class KeywordIntelligenceService:
             parsed_keyword_count=parsed_keyword_count,
             final_source_of_truth=final_source_of_truth,
             valid_ai_run=valid_ai_run,
+            route_called=route_called,
+            file_parsed=file_parsed,
+            rules_loaded=rules_loaded,
+            ai_context_builder_entered=ai_context_builder_entered,
+            ai_context_builder_completed=ai_context_builder_completed,
+            openai_client_called=openai_client_called,
+            ai_refinement_entered=ai_refinement_entered,
+            ai_refinement_completed=ai_refinement_completed,
+            stale_result_used=stale_result_used,
+            reason_if_ai_not_called=reason_if_ai_not_called,
+            reason_if_fallback_used=reason_if_fallback_used,
         )
 
     def build_product_intelligence_profile(self, ctx: _Context) -> ProductIntelligenceProfile:

@@ -207,6 +207,17 @@ export type KeywordForensicTrace = {
   parsed_keyword_count?: number;
   final_source_of_truth?: "ai" | "fallback" | "stale_cache" | "unknown";
   valid_ai_run?: boolean;
+  route_called?: boolean;
+  file_parsed?: boolean;
+  rules_loaded?: boolean;
+  ai_context_builder_entered?: boolean;
+  ai_context_builder_completed?: boolean;
+  openai_client_called?: boolean;
+  ai_refinement_entered?: boolean;
+  ai_refinement_completed?: boolean;
+  stale_result_used?: boolean;
+  reason_if_ai_not_called?: string | null;
+  reason_if_fallback_used?: string | null;
   stage_outcomes: Record<string, unknown>;
   fallbacks: Array<Record<string, unknown>>;
   keywords_debug_map: Array<Record<string, unknown>>;
@@ -239,6 +250,17 @@ export type KeywordIntelligenceResponse = {
   parsed_keyword_count?: number;
   final_source_of_truth?: "ai" | "fallback" | "stale_cache" | "unknown";
   valid_ai_run?: boolean;
+  route_called?: boolean;
+  file_parsed?: boolean;
+  rules_loaded?: boolean;
+  ai_context_builder_entered?: boolean;
+  ai_context_builder_completed?: boolean;
+  openai_client_called?: boolean;
+  ai_refinement_entered?: boolean;
+  ai_refinement_completed?: boolean;
+  stale_result_used?: boolean;
+  reason_if_ai_not_called?: string | null;
+  reason_if_fallback_used?: string | null;
 };
 
 export type StrategicEnrichmentResponse = {

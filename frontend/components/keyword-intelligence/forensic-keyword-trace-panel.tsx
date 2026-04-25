@@ -60,6 +60,17 @@ export function ForensicKeywordTracePanel({ trace, analysisSource, currentFinger
                   valid_ai_run: trace.valid_ai_run,
                   parsed_keyword_count: trace.parsed_keyword_count,
                   rules_version: trace.rules_version,
+                  route_called: trace.route_called,
+                  file_parsed: trace.file_parsed,
+                  rules_loaded: trace.rules_loaded,
+                  ai_context_builder_entered: trace.ai_context_builder_entered,
+                  ai_context_builder_completed: trace.ai_context_builder_completed,
+                  openai_client_called: trace.openai_client_called,
+                  ai_refinement_entered: trace.ai_refinement_entered,
+                  ai_refinement_completed: trace.ai_refinement_completed,
+                  stale_result_used: trace.stale_result_used,
+                  reason_if_ai_not_called: trace.reason_if_ai_not_called,
+                  reason_if_fallback_used: trace.reason_if_fallback_used,
                   started_at: trace.started_at,
                   finished_at: trace.finished_at,
                   duration_ms: trace.duration_ms,
@@ -84,6 +95,16 @@ export function ForensicKeywordTracePanel({ trace, analysisSource, currentFinger
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <p className="text-sm font-semibold text-slate-900">{k.forensic.freshness}</p>
                 <pre className="mt-2 overflow-auto text-xs text-slate-700">{pretty(trace.freshness)}</pre>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">Checklist run AI reale</p>
+                <ul className="mt-2 list-disc pl-5 text-xs text-slate-700">
+                  <li>`ENABLE_KEYWORD_THREE_LAYER=true`</li>
+                  <li>`ENABLE_KEYWORD_AI_CONTEXT_BUILDER=true`</li>
+                  <li>`ENABLE_KEYWORD_AI_REFINEMENT=true` (se richiesto)</li>
+                  <li>`OPENAI_API_KEY` valorizzata</li>
+                  <li>payload con `pipeline_mode=three_layer` + `enable_ai_context_builder=true`</li>
+                </ul>
               </div>
             </>
           )}

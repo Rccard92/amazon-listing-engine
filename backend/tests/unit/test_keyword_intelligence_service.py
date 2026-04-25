@@ -200,6 +200,10 @@ def test_keyword_intelligence_forensic_trace_enabled(monkeypatch) -> None:
     assert out.analysis_finished_at is not None
     assert out.forensic_trace["pipeline_mode"] == "three_layer"
     assert out.forensic_trace["analysis_run_id"] == out.analysis_run_id
+    assert "route_called" in out.forensic_trace
+    assert "openai_client_called" in out.forensic_trace
+    assert "reason_if_ai_not_called" in out.forensic_trace
+    assert "reason_if_fallback_used" in out.forensic_trace
     assert "stage_outcomes" in out.forensic_trace
     assert "keywords_debug_map" in out.forensic_trace
     explicit_cases = out.forensic_trace["explicit_debug_cases"]
@@ -235,6 +239,7 @@ def test_keyword_intelligence_fails_when_ai_required_but_not_executed(monkeypatc
     monkeypatch.setenv("ENABLE_KEYWORD_THREE_LAYER", "true")
     monkeypatch.setenv("ENABLE_KEYWORD_AI_CONTEXT_BUILDER", "false")
     monkeypatch.setenv("ENABLE_KEYWORD_AI_REFINEMENT", "false")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     from app.core import config
 
     config.get_settings.cache_clear()
@@ -251,13 +256,14 @@ def test_keyword_intelligence_fails_when_ai_required_but_not_executed(monkeypatc
         service.run(brief=brief, enrichment=None, request=req)
         assert False, "Atteso AnalysisPipelineError quando AI richiesta ma non eseguita"
     except AnalysisPipelineError as exc:
-        assert exc.message_it == "Keyword Intelligence incompleta: fallback non consentito"
+        assert exc.message_it == "Motore AI non disponibile"
 
 
 def test_keyword_intelligence_marks_valid_ai_run_when_context_ai_executed(monkeypatch) -> None:
     monkeypatch.setenv("ENABLE_KEYWORD_THREE_LAYER", "true")
     monkeypatch.setenv("ENABLE_KEYWORD_AI_CONTEXT_BUILDER", "true")
     monkeypatch.setenv("ENABLE_KEYWORD_AI_REFINEMENT", "false")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     from app.core import config
 
     config.get_settings.cache_clear()

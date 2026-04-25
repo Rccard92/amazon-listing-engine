@@ -168,3 +168,14 @@ class KeywordIntelligenceResponse(BaseModel):
     parsed_keyword_count: int = 0
     final_source_of_truth: Literal["ai", "fallback", "stale_cache", "unknown"] = "unknown"
     valid_ai_run: bool = False
+    route_called: bool = False
+    file_parsed: bool = False
+    rules_loaded: bool = False
+    ai_context_builder_entered: bool = False
+    ai_context_builder_completed: bool = False
+    openai_client_called: bool = False
+    ai_refinement_entered: bool = False
+    ai_refinement_completed: bool = False
+    stale_result_used: bool = False
+    reason_if_ai_not_called: str | None = None
+    reason_if_fallback_used: str | None = None

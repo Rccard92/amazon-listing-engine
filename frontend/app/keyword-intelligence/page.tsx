@@ -58,6 +58,8 @@ type KeywordRunMeta = {
   final_source_of_truth: "ai" | "fallback" | "stale_cache" | "unknown" | null;
   valid_ai_run: boolean;
   fallback_reason: string | null;
+  reason_if_ai_not_called: string | null;
+  reason_if_fallback_used: string | null;
 };
 
 function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
@@ -216,6 +218,17 @@ function KeywordIntelligenceInner() {
           ai_refinement_executed: Boolean(aiObject.ai_refinement_executed),
           fallback_used: Boolean(aiObject.fallback_used),
           fallback_reason: (aiObject.fallback_reason as string) ?? null,
+          route_called: Boolean(aiObject.route_called),
+          file_parsed: Boolean(aiObject.file_parsed),
+          rules_loaded: Boolean(aiObject.rules_loaded),
+          ai_context_builder_entered: Boolean(aiObject.ai_context_builder_entered),
+          ai_context_builder_completed: Boolean(aiObject.ai_context_builder_completed),
+          openai_client_called: Boolean(aiObject.openai_client_called),
+          ai_refinement_entered: Boolean(aiObject.ai_refinement_entered),
+          ai_refinement_completed: Boolean(aiObject.ai_refinement_completed),
+          stale_result_used: Boolean(aiObject.stale_result_used),
+          reason_if_ai_not_called: (aiObject.reason_if_ai_not_called as string) ?? null,
+          reason_if_fallback_used: (aiObject.reason_if_fallback_used as string) ?? null,
           model_name: (aiObject.model_name as string) ?? null,
           parsed_keyword_count: (aiObject.parsed_keyword_count as number) ?? 0,
           final_source_of_truth:
@@ -238,6 +251,8 @@ function KeywordIntelligenceInner() {
           final_source_of_truth?: "ai" | "fallback" | "stale_cache" | "unknown" | null;
           valid_ai_run?: boolean;
           fallback_reason?: string | null;
+          reason_if_ai_not_called?: string | null;
+          reason_if_fallback_used?: string | null;
         };
         setSavedFingerprint(meta.input_fingerprint ?? null);
         setLastRunMeta({
@@ -251,6 +266,8 @@ function KeywordIntelligenceInner() {
           final_source_of_truth: meta.final_source_of_truth ?? null,
           valid_ai_run: Boolean(meta.valid_ai_run),
           fallback_reason: meta.fallback_reason ?? null,
+          reason_if_ai_not_called: meta.reason_if_ai_not_called ?? null,
+          reason_if_fallback_used: meta.reason_if_fallback_used ?? null,
         });
       }
     }
@@ -381,6 +398,8 @@ function KeywordIntelligenceInner() {
       final_source_of_truth: response.intelligence.final_source_of_truth ?? "unknown",
       valid_ai_run: Boolean(response.intelligence.valid_ai_run),
       fallback_reason: response.intelligence.fallback_reason ?? null,
+      reason_if_ai_not_called: response.intelligence.reason_if_ai_not_called ?? null,
+      reason_if_fallback_used: response.intelligence.reason_if_fallback_used ?? null,
     });
   }
 
@@ -417,6 +436,8 @@ function KeywordIntelligenceInner() {
         final_source_of_truth: analysis.final_source_of_truth ?? lastRunMeta?.final_source_of_truth ?? "unknown",
         valid_ai_run: Boolean(analysis.valid_ai_run ?? lastRunMeta?.valid_ai_run),
         fallback_reason: analysis.fallback_reason ?? lastRunMeta?.fallback_reason ?? null,
+        reason_if_ai_not_called: analysis.reason_if_ai_not_called ?? lastRunMeta?.reason_if_ai_not_called ?? null,
+        reason_if_fallback_used: analysis.reason_if_fallback_used ?? lastRunMeta?.reason_if_fallback_used ?? null,
       },
       [KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY]: uploadState,
       [KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY]: manualSeedsText,
@@ -436,6 +457,17 @@ function KeywordIntelligenceInner() {
         parsed_keyword_count: analysis.parsed_keyword_count ?? 0,
         final_source_of_truth: analysis.final_source_of_truth ?? "unknown",
         valid_ai_run: analysis.valid_ai_run ?? false,
+        route_called: analysis.route_called ?? false,
+        file_parsed: analysis.file_parsed ?? false,
+        rules_loaded: analysis.rules_loaded ?? false,
+        ai_context_builder_entered: analysis.ai_context_builder_entered ?? false,
+        ai_context_builder_completed: analysis.ai_context_builder_completed ?? false,
+        openai_client_called: analysis.openai_client_called ?? false,
+        ai_refinement_entered: analysis.ai_refinement_entered ?? false,
+        ai_refinement_completed: analysis.ai_refinement_completed ?? false,
+        stale_result_used: analysis.stale_result_used ?? false,
+        reason_if_ai_not_called: analysis.reason_if_ai_not_called ?? null,
+        reason_if_fallback_used: analysis.reason_if_fallback_used ?? null,
       },
     };
     const updated = await updateWorkItemResult(workItemId, { input_data: nextInput, status: "in_progress" });
@@ -561,6 +593,11 @@ function KeywordIntelligenceInner() {
                 </p>
                 {(lastRunMeta?.fallback_reason ?? analysis.fallback_reason) ? (
                   <p className="mt-1 text-xs text-amber-700">Fallback reason: {lastRunMeta?.fallback_reason ?? analysis.fallback_reason}</p>
+                ) : null}
+                {(lastRunMeta?.reason_if_ai_not_called ?? analysis.reason_if_ai_not_called) ? (
+                  <p className="mt-1 text-xs text-red-700">
+                    Reason AI not called: {lastRunMeta?.reason_if_ai_not_called ?? analysis.reason_if_ai_not_called}
+                  </p>
                 ) : null}
               </div>
             </div>
