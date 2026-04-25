@@ -280,6 +280,8 @@ function KeywordIntelligenceInner() {
   const manualSeeds = useMemo(() => splitLines(manualSeedsText), [manualSeedsText]);
   const hasUploadedFile = uploadState.files.length > 0;
   const uploadTimestamp = uploadState.uploaded_at_iso ? new Date(uploadState.uploaded_at_iso).toLocaleString("it-IT") : null;
+  const filesSummary = uploadState.files.map((file) => file.filename).join(", ") || "-";
+  const analysisCompleted = Boolean(analysis?.analysis_finished_at ?? lastRunMeta?.analysis_finished_at);
   const currentFingerprint = useMemo(
     () =>
       buildFingerprint({
@@ -554,91 +556,43 @@ function KeywordIntelligenceInner() {
             {k.goLegacy}
           </Button>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-700">
-          <p className="font-semibold text-slate-900">Prerequisiti run AI (live)</p>
-          <p className="mt-1">
-            `keyword_three_layer_enabled`: <span className="font-mono">{String(threeLayerEnabled)}</span> ·{" "}
-            `keyword_ai_context_builder_enabled`: <span className="font-mono">{String(contextBuilderEnabled)}</span> ·{" "}
-            `keyword_ai_refinement_enabled`: <span className="font-mono">{String(refinementEnabled)}</span>
-          </p>
-          <p className="mt-1">
-            Se uno dei flag e&apos; `false`, la pipeline puo&apos; andare in fallback/legacy. In Railway imposta:
-            `ENABLE_KEYWORD_THREE_LAYER=true`, `ENABLE_KEYWORD_AI_CONTEXT_BUILDER=true`, opzionale
-            `ENABLE_KEYWORD_AI_REFINEMENT=true`, e `OPENAI_API_KEY`.
-          </p>
-        </div>
-        {hasUploadedFile && heliumRows.length === 0 ? (
-          <p className="text-xs text-amber-700">
-            File caricato senza righe keyword reidratate: esegui Sostituisci file per forzare parsing fresco ed evitare analisi stale.
-          </p>
-        ) : null}
       </section>
 
       {analysis ? (
         <>
           <section className="surface-card rounded-4xl p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-slate-900">Ultima analisi</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Riepilogo fase</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Run ID</p>
-                <p className="mt-2 text-sm font-medium text-slate-900 break-all">{lastRunMeta?.analysis_run_id ?? analysis.analysis_run_id ?? "-"}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Timeline</p>
-                <p className="mt-2 text-sm font-medium text-slate-900">
-                  {(lastRunMeta?.analysis_started_at ?? analysis.analysis_started_at) || "-"} {" -> "} {(lastRunMeta?.analysis_finished_at ?? analysis.analysis_finished_at) || "-"}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Input</p>
-                <p className="mt-2 text-sm font-medium text-slate-900">
-                  Righe: {lastRunMeta?.rows_count ?? heliumRows.length} · File: {lastRunMeta?.files_summary || uploadState.files.map((f) => f.filename).join(", ") || "-"}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Motore</p>
-                <p className="mt-2 text-sm font-medium text-slate-900">
-                  Model: {lastRunMeta?.analysis_model_used ?? analysis.analysis_model_used ?? "-"} · Rules: {lastRunMeta?.rules_version ?? analysis.rules_applied}
-                </p>
-                <p className="mt-1 text-xs text-slate-600">
-                  Source: {lastRunMeta?.final_source_of_truth ?? analysis.final_source_of_truth ?? "unknown"} · AI valida:{" "}
-                  {(lastRunMeta?.valid_ai_run ?? analysis.valid_ai_run) ? "si" : "no"}
-                </p>
-                {(lastRunMeta?.fallback_reason ?? analysis.fallback_reason) ? (
-                  <p className="mt-1 text-xs text-amber-700">Fallback reason: {lastRunMeta?.fallback_reason ?? analysis.fallback_reason}</p>
-                ) : null}
-                {(lastRunMeta?.reason_if_ai_not_called ?? analysis.reason_if_ai_not_called) ? (
-                  <p className="mt-1 text-xs text-red-700">
-                    Reason AI not called: {lastRunMeta?.reason_if_ai_not_called ?? analysis.reason_if_ai_not_called}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          </section>
-          <section className="surface-card rounded-4xl p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-slate-900">{k.interpretation.summaryTitle}</h2>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{k.interpretation.productDetected}</p>
-                <p className="mt-2 text-sm font-medium text-slate-900">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Prodotto rilevato</p>
+                <p className="mt-2 text-sm font-medium text-slate-900 break-all">
                   {analysis.product_intelligence_profile.product_detected || k.interpretation.empty}
                 </p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{k.interpretation.categoryDetected}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">File caricato</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  {filesSummary}
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Righe keyword parse: {uploadState.parsed_rows_count}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Analisi</p>
+                <p className="mt-2 text-sm font-medium text-slate-900 break-all">{lastRunMeta?.analysis_run_id ?? analysis.analysis_run_id ?? "-"}</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Stato: {analysisCompleted ? "Completata" : "In corso"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Categoria rilevata</p>
                 <p className="mt-2 text-sm font-medium text-slate-900">
                   {analysis.product_intelligence_profile.category_detected || k.interpretation.empty}
                 </p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{k.interpretation.confidence}</p>
-                <p className="mt-2 text-sm font-medium text-slate-900">
-                  {Math.round(Math.max(0, Math.min(1, analysis.product_intelligence_profile.confidence_score)) * 100)}%
-                </p>
-              </div>
             </div>
           </section>
-          <KeywordDecisionsBoard items={analysis.keyword_classifications} />
           <section className="surface-card rounded-4xl p-6 sm:p-8 space-y-5">
             <h2 className="text-lg font-semibold text-slate-900">{k.sections.clarifications}</h2>
             <div className="space-y-2">
@@ -687,7 +641,42 @@ function KeywordIntelligenceInner() {
             </button>
             {showTechnicalDetails ? (
               <div className="mt-4 space-y-4">
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-700">
+                  <p className="font-semibold text-slate-900">Dettaglio esecuzione AI</p>
+                  <p className="mt-1">
+                    `keyword_three_layer_enabled`: <span className="font-mono">{String(threeLayerEnabled)}</span> ·{" "}
+                    `keyword_ai_context_builder_enabled`: <span className="font-mono">{String(contextBuilderEnabled)}</span> ·{" "}
+                    `keyword_ai_refinement_enabled`: <span className="font-mono">{String(refinementEnabled)}</span>
+                  </p>
+                  <p className="mt-1">
+                    Run ID: {lastRunMeta?.analysis_run_id ?? analysis.analysis_run_id ?? "-"} · Timeline:{" "}
+                    {(lastRunMeta?.analysis_started_at ?? analysis.analysis_started_at) || "-"} {" -> "}{" "}
+                    {(lastRunMeta?.analysis_finished_at ?? analysis.analysis_finished_at) || "-"}
+                  </p>
+                  <p className="mt-1">
+                    Model: {lastRunMeta?.analysis_model_used ?? analysis.analysis_model_used ?? "-"} · Rules:{" "}
+                    {lastRunMeta?.rules_version ?? analysis.rules_applied}
+                  </p>
+                  <p className="mt-1">
+                    Source: {lastRunMeta?.final_source_of_truth ?? analysis.final_source_of_truth ?? "unknown"} · AI valida:{" "}
+                    {(lastRunMeta?.valid_ai_run ?? analysis.valid_ai_run) ? "si" : "no"}
+                  </p>
+                  {(lastRunMeta?.fallback_reason ?? analysis.fallback_reason) ? (
+                    <p className="mt-1 text-amber-700">Fallback reason: {lastRunMeta?.fallback_reason ?? analysis.fallback_reason}</p>
+                  ) : null}
+                  {(lastRunMeta?.reason_if_ai_not_called ?? analysis.reason_if_ai_not_called) ? (
+                    <p className="mt-1 text-red-700">
+                      Reason AI not called: {lastRunMeta?.reason_if_ai_not_called ?? analysis.reason_if_ai_not_called}
+                    </p>
+                  ) : null}
+                </section>
+                {hasUploadedFile && heliumRows.length === 0 ? (
+                  <p className="text-xs text-amber-700">
+                    File caricato senza righe keyword reidratate: esegui Sostituisci file per forzare parsing fresco ed evitare analisi stale.
+                  </p>
+                ) : null}
                 <ProductInterpretationCard profile={analysis.product_intelligence_profile} compact={false} />
+                <KeywordDecisionsBoard items={analysis.keyword_classifications} />
                 {aiDebugEnabled ? <DebugTraceCollapsible trace={analysis.debug_trace ?? null} /> : null}
                 {forensicDebugEnabled ? (
                   <ForensicKeywordTracePanel

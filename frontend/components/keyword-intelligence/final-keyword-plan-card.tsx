@@ -29,18 +29,23 @@ export function FinalKeywordPlanCard({ plan }: FinalKeywordPlanCardProps) {
     .map((item) => item.keyword);
   const blocked = new Set([...verifyKeywords, ...plan.keyword_escluse_definitivamente.map((item) => item.keyword)]);
   const frontendSafe = plan.parole_da_spingere_nel_frontend.filter((keyword) => !blocked.has(keyword));
-  const frontendCore = plan.parole_da_spingere_nel_frontend.slice(0, 8);
+  const frontendCore = frontendSafe.slice(0, 8).length ? frontendSafe.slice(0, 8) : plan.parole_da_spingere_nel_frontend.slice(0, 8);
   const frontendSupport = frontendSafe.slice(8);
   const backendSafe = plan.parole_da_tenere_per_backend.filter((keyword) => !blocked.has(keyword));
+  const backendCopyValue = backendSafe.join(" ");
 
   return (
     <section className="surface-card rounded-4xl p-6 sm:p-8 space-y-5">
       <h2 className="text-lg font-semibold text-slate-900">{k.finalPlan.title}</h2>
       <p className="text-sm text-slate-600">{k.finalPlan.summaryHint}</p>
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">{k.finalPlan.primary}</p>
+        <p className="mt-2 text-sm font-semibold text-emerald-950">{plan.keyword_primaria_finale || k.finalPlan.empty}</p>
+      </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.frontendCore}</p>
-          {renderPills(frontendSafe.slice(0, 8).length ? frontendSafe.slice(0, 8) : frontendCore)}
+          {renderPills(frontendCore)}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.frontendSupport}</p>
@@ -49,6 +54,12 @@ export function FinalKeywordPlanCard({ plan }: FinalKeywordPlanCardProps) {
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.backendFinal}</p>
           {renderPills(backendSafe)}
+          <p className="mt-3 text-xs text-slate-500">{k.finalPlan.backendCopyHint}</p>
+          <textarea
+            readOnly
+            value={backendCopyValue}
+            className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700"
+          />
         </div>
         {verifyKeywords.length ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
