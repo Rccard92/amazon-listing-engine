@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { it } from "@/lib/i18n/it";
 import type { KeywordClassificationItem } from "@/lib/listing-generation";
@@ -24,12 +24,24 @@ function mapReasonLabel(item: KeywordClassificationItem): string {
 }
 
 function simpleGroups(items: KeywordClassificationItem[]) {
+  const blockedKeywords = new Set(
+    items
+      .filter((item) =>
+        ["BRANDED_COMPETITOR", "OFF_TARGET", "NEGATIVE_KEYWORD", "VERIFY_PRODUCT_FEATURE"].includes(item.category) ||
+        item.required_user_confirmation ||
+        item.recommended_usage === "exclude" ||
+        item.recommended_usage === "verify",
+      )
+      .map((item) => item.keyword),
+  );
   const content = items.filter((item) =>
-    ["PRIMARY_SEO", "SECONDARY_SEO", "FEATURE_KEYWORD", "LONG_TAIL"].includes(item.category),
+    ["PRIMARY_SEO", "SECONDARY_SEO", "FEATURE_KEYWORD", "LONG_TAIL"].includes(item.category) &&
+    !blockedKeywords.has(item.keyword),
   );
   const backend = items.filter((item) =>
-    ["BACKEND_ONLY", "PPC_EXACT", "PPC_PHRASE", "LONG_TAIL"].includes(item.category) ||
-    item.recommended_usage === "backend_search_terms",
+    (["BACKEND_ONLY", "PPC_EXACT", "PPC_PHRASE", "LONG_TAIL"].includes(item.category) ||
+      item.recommended_usage === "backend_search_terms") &&
+    !blockedKeywords.has(item.keyword),
   );
   const verify = items.filter(
     (item) => item.category === "VERIFY_PRODUCT_FEATURE" || item.required_user_confirmation,
@@ -57,7 +69,6 @@ function Pills({ items }: { items: string[] }) {
 }
 
 export function KeywordDecisionsBoard({ items }: KeywordDecisionsBoardProps) {
-  const [showDebug, setShowDebug] = useState(false);
   const groups = useMemo(() => simpleGroups(items), [items]);
   const excludedRows = groups.excluded.map((item) => ({
     keyword: item.keyword,
@@ -117,24 +128,6 @@ export function KeywordDecisionsBoard({ items }: KeywordDecisionsBoardProps) {
         </article>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <button
-          type="button"
-          onClick={() => setShowDebug((value) => !value)}
-          className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-        >
-          {showDebug ? k.decisions.hideDebug : k.decisions.showDebug}
-        </button>
-        {showDebug ? (
-          <div className="mt-3 space-y-2">
-            {items.map((item) => (
-              <p key={`${item.keyword}-${item.category}`} className="text-xs text-slate-600">
-                {item.keyword} | {item.category} | {item.priority} | {item.recommended_usage}
-              </p>
-            ))}
-          </div>
-        ) : null}
-      </div>
     </section>
   );
 }

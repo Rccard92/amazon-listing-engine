@@ -5,6 +5,7 @@ import type { ProductIntelligenceProfile } from "@/lib/listing-generation";
 
 type ProductInterpretationCardProps = {
   profile: ProductIntelligenceProfile;
+  compact?: boolean;
 };
 
 const k = it.keywordIntelligence;
@@ -27,7 +28,7 @@ function renderList(values: string[]): JSX.Element {
   );
 }
 
-export function ProductInterpretationCard({ profile }: ProductInterpretationCardProps) {
+export function ProductInterpretationCard({ profile, compact = false }: ProductInterpretationCardProps) {
   const confirmedAttributes = profile.main_detected_attributes.slice(0, 10).map((item) => `${item.name}: ${item.value}`);
 
   return (
@@ -49,20 +50,22 @@ export function ProductInterpretationCard({ profile }: ProductInterpretationCard
           <p className="mt-2 text-sm font-medium text-slate-900">{renderPct(profile.confidence_score)}</p>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900">{k.interpretation.confirmedAttributes}</h3>
-          {renderList(confirmedAttributes)}
+      {!compact ? (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">{k.interpretation.confirmedAttributes}</h3>
+            {renderList(confirmedAttributes)}
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">{k.interpretation.excludedAttributes}</h3>
+            {renderList(profile.excluded_attributes)}
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">{k.interpretation.uncertainAttributes}</h3>
+            {renderList(profile.uncertain_attributes)}
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900">{k.interpretation.excludedAttributes}</h3>
-          {renderList(profile.excluded_attributes)}
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900">{k.interpretation.uncertainAttributes}</h3>
-          {renderList(profile.uncertain_attributes)}
-        </div>
-      </div>
+      ) : null}
     </section>
   );
 }

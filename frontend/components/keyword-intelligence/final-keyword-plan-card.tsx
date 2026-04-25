@@ -27,32 +27,28 @@ export function FinalKeywordPlanCard({ plan }: FinalKeywordPlanCardProps) {
   const verifyKeywords = plan.classificazioni_confermate
     .filter((item) => item.category === "VERIFY_PRODUCT_FEATURE" || item.required_user_confirmation)
     .map((item) => item.keyword);
+  const blocked = new Set([...verifyKeywords, ...plan.keyword_escluse_definitivamente.map((item) => item.keyword)]);
+  const frontendSafe = plan.parole_da_spingere_nel_frontend.filter((keyword) => !blocked.has(keyword));
   const frontendCore = plan.parole_da_spingere_nel_frontend.slice(0, 8);
-  const frontendSupport = plan.parole_da_spingere_nel_frontend.slice(8);
+  const frontendSupport = frontendSafe.slice(8);
+  const backendSafe = plan.parole_da_tenere_per_backend.filter((keyword) => !blocked.has(keyword));
 
   return (
     <section className="surface-card rounded-4xl p-6 sm:p-8 space-y-5">
       <h2 className="text-lg font-semibold text-slate-900">{k.finalPlan.title}</h2>
+      <p className="text-sm text-slate-600">{k.finalPlan.summaryHint}</p>
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.primary}</p>
-          <p className="mt-2 text-sm font-medium text-slate-900">{plan.keyword_primaria_finale || k.finalPlan.empty}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.secondary}</p>
-          {renderPills(plan.keyword_secondarie_prioritarie)}
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.frontendCore}</p>
-          {renderPills(frontendCore)}
+          {renderPills(frontendSafe.slice(0, 8).length ? frontendSafe.slice(0, 8) : frontendCore)}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.frontendSupport}</p>
           {renderPills(frontendSupport)}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.backend}</p>
-          {renderPills(plan.parole_da_tenere_per_backend)}
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.backendFinal}</p>
+          {renderPills(backendSafe)}
         </div>
         {verifyKeywords.length ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -62,10 +58,12 @@ export function FinalKeywordPlanCard({ plan }: FinalKeywordPlanCardProps) {
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.excludedFinal}</p>
-        {renderPills(excludedKeywords)}
-      </div>
+      {excludedKeywords.length ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k.finalPlan.excludedFinal}</p>
+          {renderPills(excludedKeywords)}
+        </div>
+      ) : null}
     </section>
   );
 }

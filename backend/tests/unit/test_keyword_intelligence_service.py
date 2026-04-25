@@ -91,3 +91,49 @@ def test_keyword_intelligence_excludes_competitor_and_off_target() -> None:
     assert excluded["dyson aspirapolvere senza fili"] == "competitor_brand"
     assert "ricambio filtro aspirapolvere" in excluded
     assert excluded["ricambio filtro aspirapolvere"] == "wrong_product_type"
+
+
+def test_keyword_intelligence_does_not_promote_competitor_seed_to_primary() -> None:
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(
+        nome_prodotto="Supporto telefono auto",
+        categoria="Auto",
+        keyword_primarie=["nike supporto telefono", "supporto telefono auto"],
+    )
+    req = KeywordIntelligenceRequest(
+        helium10_rows=[
+            {"keyword": "nike supporto telefono"},
+            {"keyword": "supporto telefono auto magnetico"},
+        ]
+    )
+    out = service.run(brief=brief, enrichment=None, request=req)
+    assert out.confirmed_keyword_plan.keyword_primaria_finale != "nike supporto telefono"
+    excluded_keywords = [item.keyword for item in out.confirmed_keyword_plan.keyword_escluse_definitivamente]
+    assert "nike supporto telefono" in excluded_keywords
+
+
+def test_keyword_intelligence_keeps_excluded_and_verify_out_of_accepted_groups() -> None:
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(
+        nome_prodotto="Lampada scrivania led",
+        categoria="Illuminazione",
+        keyword_primarie=["lampada scrivania led"],
+    )
+    req = KeywordIntelligenceRequest(
+        helium10_rows=[
+            {"keyword": "lampada scrivania led"},
+            {"keyword": "adatto a dyson base"},
+            {"keyword": "ricambio lampada vintage"},
+            {"keyword": "compatibile con ikea desk"},
+            {"keyword": "lampada led ufficio regolabile"},
+        ]
+    )
+    out = service.run(brief=brief, enrichment=None, request=req)
+    blocked = {item.keyword for item in out.confirmed_keyword_plan.keyword_escluse_definitivamente}
+    blocked.update(
+        item.keyword
+        for item in out.confirmed_keyword_plan.classificazioni_confermate
+        if item.category == "VERIFY_PRODUCT_FEATURE" or item.required_user_confirmation
+    )
+    assert all(keyword not in blocked for keyword in out.confirmed_keyword_plan.parole_da_spingere_nel_frontend)
+    assert all(keyword not in blocked for keyword in out.confirmed_keyword_plan.parole_da_tenere_per_backend)

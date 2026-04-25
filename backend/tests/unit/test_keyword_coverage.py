@@ -45,3 +45,22 @@ def test_remaining_backend_opportunities_skips_excluded_and_verify() -> None:
     assert "compatibile vesa" not in remaining
     assert "staffa monitor" not in remaining
     assert "supporto monitor ergonomico" in remaining
+
+
+def test_remaining_backend_opportunities_normalizes_blocked_terms() -> None:
+    plan = ConfirmedKeywordPlan(
+        keyword_primaria_finale="aspirapolvere",
+        keyword_secondarie_prioritarie=["  Dyson V15  "],
+        parole_da_tenere_per_backend=["dyson v15", "aspirapolvere casa"],
+        keyword_escluse_definitivamente=[
+            KeywordClassificationItem(
+                keyword="DYSON V15",
+                category="BRANDED_COMPETITOR",
+                recommended_usage="exclude",
+                excluded_reason_type="competitor_brand",
+            )
+        ],
+    )
+    remaining = remaining_backend_opportunities(plan=plan, frontend_content=None)
+    assert "dyson v15" not in remaining
+    assert "aspirapolvere casa" in remaining

@@ -26,6 +26,14 @@ import {
 import { getWorkItemResult, updateWorkItemResult } from "@/lib/work-items";
 
 const k = it.keywordIntelligence;
+const KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY = "keyword_intelligence_upload_state";
+const KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY = "keyword_intelligence_manual_seeds_text";
+
+type PersistedUploadState = {
+  files: KeywordIntelligenceUploadedFile[];
+  parsed_rows_count: number;
+  uploaded_at_iso: string | null;
+};
 
 function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
   return {
@@ -70,6 +78,11 @@ function KeywordIntelligenceInner() {
   const [manualSeedsText, setManualSeedsText] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<KeywordIntelligenceUploadedFile[]>([]);
   const [heliumRows, setHeliumRows] = useState<{ keyword: string; source_row: number }[]>([]);
+  const [uploadState, setUploadState] = useState<PersistedUploadState>({
+    files: [],
+    parsed_rows_count: 0,
+    uploaded_at_iso: null,
+  });
   const [analysis, setAnalysis] = useState<KeywordIntelligenceResponse | null>(null);
   const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -77,6 +90,7 @@ function KeywordIntelligenceInner() {
   const [hint, setHint] = useState<string | null>(null);
   const [aiDebugEnabled, setAiDebugEnabled] = useState(false);
   const [confirmPlanByUser, setConfirmPlanByUser] = useState(false);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +116,22 @@ function KeywordIntelligenceInner() {
       const profileRaw = input[PRODUCT_INTELLIGENCE_PROFILE_KEY];
       const clarRaw = input[KEYWORD_CLARIFICATIONS_KEY];
       const confirmedRaw = input[CONFIRMED_KEYWORD_PLAN_KEY];
+      const uploadRaw = input[KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY];
+      const manualSeedsRaw = input[KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY];
+      if (typeof manualSeedsRaw === "string") setManualSeedsText(manualSeedsRaw);
+      if (uploadRaw && typeof uploadRaw === "object" && !Array.isArray(uploadRaw)) {
+        const parsedUpload = uploadRaw as {
+          files?: KeywordIntelligenceUploadedFile[];
+          parsed_rows_count?: number;
+          uploaded_at_iso?: string | null;
+        };
+        setUploadState({
+          files: parsedUpload.files ?? [],
+          parsed_rows_count: parsedUpload.parsed_rows_count ?? 0,
+          uploaded_at_iso: parsedUpload.uploaded_at_iso ?? null,
+        });
+        setUploadedFiles(parsedUpload.files ?? []);
+      }
       if (aiRaw && profileRaw && confirmedRaw && typeof aiRaw === "object" && typeof profileRaw === "object") {
         const confirmedPlan = normalizeConfirmedPlan(confirmedRaw as ConfirmedKeywordPlan);
         setAnalysis({
@@ -122,6 +152,8 @@ function KeywordIntelligenceInner() {
   }, [workItemId]);
 
   const manualSeeds = useMemo(() => splitLines(manualSeedsText), [manualSeedsText]);
+  const hasUploadedFile = uploadState.files.length > 0;
+  const uploadTimestamp = uploadState.uploaded_at_iso ? new Date(uploadState.uploaded_at_iso).toLocaleString("it-IT") : null;
 
   async function onFilesSelected(files: File[]) {
     const nextFiles: KeywordIntelligenceUploadedFile[] = files.map((f) => ({
@@ -138,6 +170,21 @@ function KeywordIntelligenceInner() {
       }
     }
     setHeliumRows(csvRows);
+    setUploadState({
+      files: nextFiles,
+      parsed_rows_count: csvRows.length,
+      uploaded_at_iso: new Date().toISOString(),
+    });
+  }
+
+  function onReplaceFile() {
+    setUploadState({ files: [], parsed_rows_count: 0, uploaded_at_iso: null });
+  }
+
+  function onRemoveFile() {
+    setUploadedFiles([]);
+    setHeliumRows([]);
+    setUploadState({ files: [], parsed_rows_count: 0, uploaded_at_iso: null });
   }
 
   async function runIntelligence() {
@@ -179,6 +226,8 @@ function KeywordIntelligenceInner() {
       [KEYWORD_CLARIFICATIONS_KEY]: analysis.clarification_questions,
       [CONFIRMED_KEYWORD_PLAN_KEY]: { ...analysis.confirmed_keyword_plan, confirmed_by_user: confirmPlanByUser },
       keyword_intelligence_rules_applied: analysis.rules_applied ?? analysis.confirmed_keyword_plan.rules_version,
+      [KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY]: uploadState,
+      [KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY]: manualSeedsText,
     };
     const updated = await updateWorkItemResult(workItemId, { input_data: nextInput, status: "in_progress" });
     setBusy(false);
@@ -217,9 +266,40 @@ function KeywordIntelligenceInner() {
         <div>
           <p className="text-sm font-medium text-slate-800">{k.uploadTitle}</p>
           <p className="text-xs text-slate-500">{k.uploadHint}</p>
-          <div className="mt-2">
-            <UploadDropzone accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onFilesSelected={(files) => void onFilesSelected(files)} />
-          </div>
+          {!hasUploadedFile ? (
+            <div className="mt-2">
+              <UploadDropzone
+                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onFilesSelected={(files) => void onFilesSelected(files)}
+              />
+            </div>
+          ) : (
+            <div className="mt-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-semibold text-emerald-900">{k.uploadLoaded.title}</p>
+              <p className="mt-1 text-xs text-emerald-800">
+                {k.uploadLoaded.fileLabel}: {uploadState.files.map((file) => file.filename).join(", ")}
+              </p>
+              <p className="mt-1 text-xs text-emerald-800">
+                {k.uploadLoaded.statusLabel}: {k.uploadLoaded.statusValue}
+              </p>
+              <p className="mt-1 text-xs text-emerald-800">
+                {k.uploadLoaded.rowsLabel}: {uploadState.parsed_rows_count}
+              </p>
+              {uploadTimestamp ? (
+                <p className="mt-1 text-xs text-emerald-800">
+                  {k.uploadLoaded.timestampLabel}: {uploadTimestamp}
+                </p>
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button type="button" variant="secondary" onClick={onReplaceFile}>
+                  {k.uploadLoaded.replace}
+                </Button>
+                <Button type="button" variant="ghost" onClick={onRemoveFile}>
+                  {k.uploadLoaded.remove}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
         <div>
           <label className="text-sm font-medium text-slate-800">{k.manualSeedsLabel}</label>
@@ -237,7 +317,29 @@ function KeywordIntelligenceInner() {
 
       {analysis ? (
         <>
-          <ProductInterpretationCard profile={analysis.product_intelligence_profile} />
+          <section className="surface-card rounded-4xl p-6 sm:p-8">
+            <h2 className="text-lg font-semibold text-slate-900">{k.interpretation.summaryTitle}</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{k.interpretation.productDetected}</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  {analysis.product_intelligence_profile.product_detected || k.interpretation.empty}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{k.interpretation.categoryDetected}</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  {analysis.product_intelligence_profile.category_detected || k.interpretation.empty}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{k.interpretation.confidence}</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  {Math.round(Math.max(0, Math.min(1, analysis.product_intelligence_profile.confidence_score)) * 100)}%
+                </p>
+              </div>
+            </div>
+          </section>
           <KeywordDecisionsBoard items={analysis.keyword_classifications} />
           <section className="surface-card rounded-4xl p-6 sm:p-8 space-y-5">
             <h2 className="text-lg font-semibold text-slate-900">{k.sections.clarifications}</h2>
@@ -277,7 +379,21 @@ function KeywordIntelligenceInner() {
               </span>
             </div>
           </section>
-          {aiDebugEnabled ? <DebugTraceCollapsible trace={analysis.debug_trace ?? null} /> : null}
+          <section className="surface-card rounded-4xl p-6 sm:p-8">
+            <button
+              type="button"
+              onClick={() => setShowTechnicalDetails((value) => !value)}
+              className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+            >
+              {showTechnicalDetails ? k.debugHide : k.debugShow}
+            </button>
+            {showTechnicalDetails ? (
+              <div className="mt-4 space-y-4">
+                <ProductInterpretationCard profile={analysis.product_intelligence_profile} compact={false} />
+                {aiDebugEnabled ? <DebugTraceCollapsible trace={analysis.debug_trace ?? null} /> : null}
+              </div>
+            ) : null}
+          </section>
           <section className="surface-card rounded-4xl p-6 sm:p-8">
             <div className="flex flex-wrap items-center justify-end gap-3">
               <Button type="button" variant="ghost" onClick={() => void handleGoBack()} disabled={busy} className="sm:mr-auto">

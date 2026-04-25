@@ -53,16 +53,10 @@ class KeywordRulesEngine:
 
         competitor_tokens = ("nike", "adidas", "apple", "samsung", "philips", "dyson")
         digital_intent = ("gratis", "download", "free", "pdf")
-        wrong_product_tokens = ("ricambio", "pezzo di ricambio", "usato")
+        wrong_product_tokens = ("ricambio", "pezzo di ricambio", "usato", "batteria auto", "benzina", "diesel")
         ambiguous_tokens = ("migliore", "top", "universale")
 
-        if kw in primary_set:
-            category = "PRIMARY_SEO"
-            confidence = 0.92
-            priority = "high"
-            recommended_usage = "title"
-            rationale = "Match pieno con seed keyword primaria."
-        elif any(token in kw for token in competitor_tokens):
+        if any(token in kw for token in competitor_tokens):
             category = "BRANDED_COMPETITOR"
             confidence = 0.92
             priority = "high"
@@ -91,6 +85,20 @@ class KeywordRulesEngine:
             required_user_confirmation = True
             excluded_reason_type = "unsupported_feature"
             rationale = "Richiede conferma su compatibilita/caratteristica non certa."
+        elif any(token in kw for token in ("adatto a", "compatibile con", "works with", "compatibility")):
+            category = "VERIFY_PRODUCT_FEATURE"
+            confidence = 0.64
+            priority = "medium"
+            recommended_usage = "verify"
+            required_user_confirmation = True
+            excluded_reason_type = "unsupported_feature"
+            rationale = "Keyword legata a compatibilita/feature da confermare."
+        elif kw in primary_set:
+            category = "PRIMARY_SEO"
+            confidence = 0.92
+            priority = "high"
+            recommended_usage = "title"
+            rationale = "Match pieno con seed keyword primaria."
         elif any(token in kw for token in ambiguous_tokens) and len(words) <= 2:
             category = "OFF_TARGET"
             confidence = 0.71
@@ -147,11 +155,33 @@ class KeywordRulesEngine:
         for item in classifications:
             by_category.setdefault(item.category, []).append(item.keyword)
 
-        primary_candidates = _dedupe(by_category.get("PRIMARY_SEO", []) + profile.keyword_seed_pool)
+        excluded_terms = {
+            _norm(item.keyword)
+            for item in classifications
+            if item.category in ("OFF_TARGET", "NEGATIVE_KEYWORD", "BRANDED_COMPETITOR")
+        }
+        verify_terms = {
+            _norm(item.keyword)
+            for item in classifications
+            if item.category == "VERIFY_PRODUCT_FEATURE" or item.required_user_confirmation
+        }
+        blocked = excluded_terms | verify_terms
+        safe_categories = ("PRIMARY_SEO", "SECONDARY_SEO", "FEATURE_KEYWORD", "LONG_TAIL", "BACKEND_ONLY", "PPC_EXACT", "PPC_PHRASE")
+        safe_keywords = _dedupe(
+            [
+                item.keyword
+                for item in classifications
+                if item.category in safe_categories and _norm(item.keyword) not in blocked
+            ]
+        )
+        primary_candidates = _dedupe(
+            by_category.get("PRIMARY_SEO", [])
+            + [keyword for keyword in safe_keywords if keyword in profile.keyword_seed_pool]
+        )
         secondary = _dedupe(by_category.get("SECONDARY_SEO", []) + by_category.get("LONG_TAIL", []))
         feature = _dedupe(by_category.get("FEATURE_KEYWORD", []))
-        core_frontend = _dedupe(primary_candidates[:1] + secondary[:5] + feature[:4])
-        support_frontend = _dedupe(secondary[5:12] + feature[4:8])
+        core_frontend = _dedupe([kw for kw in primary_candidates[:1] + secondary[:5] + feature[:4] if _norm(kw) not in blocked])
+        support_frontend = _dedupe([kw for kw in secondary[5:12] + feature[4:8] if _norm(kw) not in blocked])
 
         backend_pool = _dedupe(
             by_category.get("BACKEND_ONLY", [])
@@ -160,7 +190,9 @@ class KeywordRulesEngine:
             + by_category.get("LONG_TAIL", [])[6:]
             + support_frontend
         )
-        backend_reserved = [kw for kw in backend_pool if kw not in core_frontend][:24]
+        backend_reserved = [
+            kw for kw in backend_pool if kw not in core_frontend and _norm(kw) not in blocked
+        ][:24]
 
         definitively_excluded = [
             item
@@ -174,7 +206,7 @@ class KeywordRulesEngine:
         ]
         return ConfirmedKeywordPlan(
             rules_version=self.rules_version,
-            keyword_primaria_finale=(primary_candidates[0] if primary_candidates else profile.product_detected),
+            keyword_primaria_finale=(core_frontend[0] if core_frontend else profile.product_detected),
             keyword_secondarie_prioritarie=secondary[:20],
             parole_da_spingere_nel_frontend=core_frontend[:16],
             parole_da_tenere_per_backend=backend_reserved,
