@@ -181,6 +181,7 @@ def test_keyword_intelligence_forensic_trace_enabled(monkeypatch) -> None:
     brief = ProductBrief(nome_prodotto="Barbecue gas", categoria="Giardino", keyword_primarie=["barbecue gas"])
     req = KeywordIntelligenceRequest(
         include_debug_trace=True,
+        include_forensic_trace=True,
         pipeline_mode="three_layer",
         enable_deterministic_veto=True,
         forensic_fingerprint="fp_test",
@@ -193,7 +194,11 @@ def test_keyword_intelligence_forensic_trace_enabled(monkeypatch) -> None:
     )
     out = service.run_with_trace(brief=brief, enrichment=None, request=req, include_debug_trace=True)
     assert out.forensic_trace is not None
+    assert out.analysis_run_id is not None
+    assert out.analysis_started_at is not None
+    assert out.analysis_finished_at is not None
     assert out.forensic_trace["pipeline_mode"] == "three_layer"
+    assert out.forensic_trace["analysis_run_id"] == out.analysis_run_id
     assert "stage_outcomes" in out.forensic_trace
     assert "keywords_debug_map" in out.forensic_trace
     explicit_cases = out.forensic_trace["explicit_debug_cases"]
@@ -209,3 +214,17 @@ def test_keyword_intelligence_forensic_trace_enabled(monkeypatch) -> None:
         assert "refinement_result" in case
         assert "final_bucket" in case
         assert "final_reason" in case
+
+
+def test_keyword_intelligence_run_id_changes_between_runs() -> None:
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(nome_prodotto="Organizer cucina", categoria="Cucina", keyword_primarie=["organizer cucina"])
+    req = KeywordIntelligenceRequest(
+        helium10_rows=[{"keyword": "organizer cucina cassetto"}],
+        include_debug_trace=False,
+    )
+    out_a = service.run(brief=brief, enrichment=None, request=req)
+    out_b = service.run(brief=brief, enrichment=None, request=req)
+    assert out_a.analysis_run_id is not None
+    assert out_b.analysis_run_id is not None
+    assert out_a.analysis_run_id != out_b.analysis_run_id

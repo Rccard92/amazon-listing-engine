@@ -133,6 +133,7 @@ class KeywordIntelligenceRequest(BaseModel):
     clarification_answers: dict[str, str] = Field(default_factory=dict)
     confirm_plan_by_user: bool = False
     include_debug_trace: bool = False
+    include_forensic_trace: bool = False
     pipeline_mode: KeywordPipelineMode = "legacy"
     enable_ai_context_builder: bool = False
     enable_deterministic_veto: bool = True
@@ -154,3 +155,7 @@ class KeywordIntelligenceResponse(BaseModel):
     refinement_summary: dict[str, int] | None = None
     forensic_trace: dict[str, Any] | None = None
     debug_trace: DebugTrace | None = None
+    analysis_run_id: str | None = None
+    analysis_started_at: str | None = None
+    analysis_finished_at: str | None = None
+    analysis_model_used: str | None = None

@@ -48,6 +48,10 @@ export function ForensicKeywordTracePanel({ trace, analysisSource, currentFinger
                 <p className="text-sm font-semibold text-slate-900">{k.forensic.pipeline}</p>
                 <pre className="mt-2 overflow-auto text-xs text-slate-700">{pretty({
                   trace_id: trace.trace_id,
+                  analysis_run_id: trace.analysis_run_id,
+                  analysis_started_at: trace.analysis_started_at,
+                  analysis_finished_at: trace.analysis_finished_at,
+                  analysis_model_used: trace.analysis_model_used,
                   started_at: trace.started_at,
                   finished_at: trace.finished_at,
                   duration_ms: trace.duration_ms,
@@ -63,6 +67,12 @@ export function ForensicKeywordTracePanel({ trace, analysisSource, currentFinger
                 <p className="text-sm font-semibold text-slate-900">{k.forensic.keywordMap}</p>
                 <pre className="mt-2 max-h-96 overflow-auto text-xs text-slate-700">{pretty(trace.keywords_debug_map)}</pre>
               </div>
+              {Array.isArray(trace.explicit_debug_cases) && trace.explicit_debug_cases.length > 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-semibold text-slate-900">Casi debug espliciti</p>
+                  <pre className="mt-2 max-h-96 overflow-auto text-xs text-slate-700">{pretty(trace.explicit_debug_cases)}</pre>
+                </div>
+              ) : null}
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <p className="text-sm font-semibold text-slate-900">{k.forensic.freshness}</p>
                 <pre className="mt-2 overflow-auto text-xs text-slate-700">{pretty(trace.freshness)}</pre>

@@ -15,6 +15,7 @@ from app.schemas.keyword_intelligence import (
 )
 from app.schemas.product_brief import ProductBrief
 from app.schemas.strategic_enrichment import StrategicEnrichment
+from app.core.config import get_settings
 from app.services.listing_generation.openai_llm_client import OpenAIListingLLMClient
 
 _SYSTEM_PROMPT = """Sei un motore di Product+Keyword Context per Amazon Italia.
@@ -62,6 +63,12 @@ def _extract_json(raw: str) -> dict:
     return json.loads(m.group(0))
 
 
+def _active_model_name() -> str | None:
+    settings = get_settings()
+    model = (settings.openai_listing_model or settings.openai_model or "").strip()
+    return model or None
+
+
 @dataclass
 class KeywordContextBuilderService:
     """Costruisce ProductKeywordContext con fallback deterministico."""
@@ -88,7 +95,7 @@ class KeywordContextBuilderService:
                     "requested_at": requested_at,
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                     "duration_ms": int((time.perf_counter() - started) * 1000),
-                    "model_name": "openai_listing_model_or_openai_model",
+                    "model_name": _active_model_name(),
                     "success": True,
                     "fallback_used": False,
                     "output": out.model_dump(mode="json"),
@@ -102,7 +109,7 @@ class KeywordContextBuilderService:
                     "requested_at": requested_at,
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                     "duration_ms": int((time.perf_counter() - started) * 1000),
-                    "model_name": "openai_listing_model_or_openai_model",
+                    "model_name": _active_model_name(),
                     "success": False,
                     "fallback_used": True,
                     "fallback_reason": str(exc),

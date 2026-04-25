@@ -178,6 +178,7 @@ export type KeywordIntelligenceRequest = {
   clarification_answers: Record<string, string>;
   confirm_plan_by_user?: boolean;
   include_debug_trace?: boolean;
+  include_forensic_trace?: boolean;
   pipeline_mode?: KeywordPipelineMode;
   enable_ai_context_builder?: boolean;
   enable_deterministic_veto?: boolean;
@@ -192,9 +193,14 @@ export type KeywordForensicTrace = {
   finished_at: string;
   duration_ms: number;
   pipeline_mode: string;
+  analysis_run_id?: string;
+  analysis_started_at?: string;
+  analysis_finished_at?: string;
+  analysis_model_used?: string | null;
   stage_outcomes: Record<string, unknown>;
   fallbacks: Array<Record<string, unknown>>;
   keywords_debug_map: Array<Record<string, unknown>>;
+  explicit_debug_cases?: Array<Record<string, unknown>>;
   freshness: Record<string, unknown>;
 };
 
@@ -211,6 +217,10 @@ export type KeywordIntelligenceResponse = {
   refinement_summary?: Record<string, number> | null;
   forensic_trace?: KeywordForensicTrace | null;
   debug_trace?: AiDebugTrace | null;
+  analysis_run_id?: string | null;
+  analysis_started_at?: string | null;
+  analysis_finished_at?: string | null;
+  analysis_model_used?: string | null;
 };
 
 export type StrategicEnrichmentResponse = {

@@ -32,6 +32,8 @@ const KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY = "keyword_intelligence_manual_
 const KEYWORD_INTELLIGENCE_CONTEXT_KEY = "keyword_intelligence_context";
 const KEYWORD_INTELLIGENCE_VETO_SUMMARY_KEY = "keyword_intelligence_veto_summary";
 const KEYWORD_INTELLIGENCE_PIPELINE_VERSION_KEY = "keyword_intelligence_pipeline_version";
+const KEYWORD_INTELLIGENCE_ROWS_KEY = "keyword_intelligence_helium_rows";
+const KEYWORD_INTELLIGENCE_FORENSIC_TRACE_KEY = "keyword_intelligence_forensic_trace";
 
 type PersistedUploadState = {
   files: KeywordIntelligenceUploadedFile[];
@@ -43,6 +45,16 @@ type UploadRuntimeMeta = {
   filename: string;
   file_type: "csv" | "xlsx" | "unknown";
   file_size_bytes: number;
+};
+
+type KeywordRunMeta = {
+  analysis_run_id: string | null;
+  analysis_started_at: string | null;
+  analysis_finished_at: string | null;
+  analysis_model_used: string | null;
+  rows_count: number;
+  rules_version: string | null;
+  files_summary: string | null;
 };
 
 function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
@@ -118,6 +130,7 @@ function KeywordIntelligenceInner() {
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [analysisSource, setAnalysisSource] = useState<"fresh" | "saved">("saved");
   const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null);
+  const [lastRunMeta, setLastRunMeta] = useState<KeywordRunMeta | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,6 +164,8 @@ function KeywordIntelligenceInner() {
       const uploadRaw = input[KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY];
       const manualSeedsRaw = input[KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY];
       const savedMetaRaw = input["keyword_intelligence_meta"];
+      const rowsRaw = input[KEYWORD_INTELLIGENCE_ROWS_KEY];
+      const forensicRaw = input[KEYWORD_INTELLIGENCE_FORENSIC_TRACE_KEY];
       if (typeof manualSeedsRaw === "string") setManualSeedsText(manualSeedsRaw);
       if (uploadRaw && typeof uploadRaw === "object" && !Array.isArray(uploadRaw)) {
         const parsedUpload = uploadRaw as {
@@ -165,22 +180,60 @@ function KeywordIntelligenceInner() {
         });
         setUploadedFiles(parsedUpload.files ?? []);
       }
+      if (Array.isArray(rowsRaw)) {
+        const safeRows = rowsRaw
+          .map((row) => {
+            if (!row || typeof row !== "object" || Array.isArray(row)) return null;
+            const item = row as { keyword?: unknown; source_row?: unknown };
+            if (typeof item.keyword !== "string" || !item.keyword.trim()) return null;
+            return {
+              keyword: item.keyword.trim(),
+              source_row: typeof item.source_row === "number" ? item.source_row : 0,
+            };
+          })
+          .filter((row): row is { keyword: string; source_row: number } => Boolean(row));
+        setHeliumRows(safeRows);
+      }
       if (aiRaw && profileRaw && confirmedRaw && typeof aiRaw === "object" && typeof profileRaw === "object") {
         const confirmedPlan = normalizeConfirmedPlan(confirmedRaw as ConfirmedKeywordPlan);
+        const aiObject = aiRaw as Record<string, unknown>;
         setAnalysis({
           product_intelligence_profile: profileRaw as KeywordIntelligenceResponse["product_intelligence_profile"],
-          keyword_classifications: (aiRaw as { keyword_classifications?: KeywordClassificationItem[] }).keyword_classifications ?? [],
+          keyword_classifications: (aiObject.keyword_classifications as KeywordClassificationItem[]) ?? [],
           clarification_questions:
             (clarRaw as KeywordIntelligenceResponse["clarification_questions"]) ?? [],
           confirmed_keyword_plan: confirmedPlan,
           rules_applied: (input["keyword_intelligence_rules_applied"] as string) ?? confirmedPlan.rules_version ?? "keyword_intelligence_rules_v1",
+          forensic_trace: (forensicRaw as KeywordIntelligenceResponse["forensic_trace"]) ?? null,
+          analysis_run_id: (aiObject.analysis_run_id as string) ?? null,
+          analysis_started_at: (aiObject.analysis_started_at as string) ?? null,
+          analysis_finished_at: (aiObject.analysis_finished_at as string) ?? null,
+          analysis_model_used: (aiObject.analysis_model_used as string) ?? null,
         });
         setAnalysisSource("saved");
         setConfirmPlanByUser(Boolean(confirmedPlan.confirmed_by_user));
       }
       if (savedMetaRaw && typeof savedMetaRaw === "object" && !Array.isArray(savedMetaRaw)) {
-        const meta = savedMetaRaw as { input_fingerprint?: string };
+        const meta = savedMetaRaw as {
+          input_fingerprint?: string;
+          analysis_run_id?: string | null;
+          analysis_started_at?: string | null;
+          analysis_finished_at?: string | null;
+          analysis_model_used?: string | null;
+          rows_count?: number;
+          rules_version?: string | null;
+          files_summary?: string | null;
+        };
         setSavedFingerprint(meta.input_fingerprint ?? null);
+        setLastRunMeta({
+          analysis_run_id: meta.analysis_run_id ?? null,
+          analysis_started_at: meta.analysis_started_at ?? null,
+          analysis_finished_at: meta.analysis_finished_at ?? null,
+          analysis_model_used: meta.analysis_model_used ?? null,
+          rows_count: typeof meta.rows_count === "number" ? meta.rows_count : 0,
+          rules_version: meta.rules_version ?? null,
+          files_summary: meta.files_summary ?? null,
+        });
       }
     }
     void load();
@@ -266,6 +319,7 @@ function KeywordIntelligenceInner() {
       clarification_answers: clarificationAnswers,
       confirm_plan_by_user: confirmPlanByUser,
       include_debug_trace: aiDebugEnabled,
+      include_forensic_trace: forensicDebugEnabled,
       pipeline_mode: threeLayerEnabled ? "three_layer" : "legacy",
       enable_ai_context_builder: contextBuilderEnabled,
       enable_deterministic_veto: deterministicVetoEnabled,
@@ -297,6 +351,15 @@ function KeywordIntelligenceInner() {
     setAnalysis({ ...response.intelligence, confirmed_keyword_plan: normalizedPlan });
     setAnalysisSource("fresh");
     setConfirmPlanByUser(Boolean(normalizedPlan.confirmed_by_user));
+    setLastRunMeta({
+      analysis_run_id: response.intelligence.analysis_run_id ?? null,
+      analysis_started_at: response.intelligence.analysis_started_at ?? null,
+      analysis_finished_at: response.intelligence.analysis_finished_at ?? null,
+      analysis_model_used: response.intelligence.analysis_model_used ?? null,
+      rows_count: heliumRows.length,
+      rules_version: response.intelligence.rules_applied ?? normalizedPlan.rules_version ?? null,
+      files_summary: uploadedFiles.map((f) => f.filename).join(", ") || null,
+    });
   }
 
   async function savePlan(): Promise<boolean> {
@@ -312,7 +375,6 @@ function KeywordIntelligenceInner() {
     const nextInput = {
       ...(loaded.data.input_data as Record<string, unknown>),
       [PRODUCT_INTELLIGENCE_PROFILE_KEY]: analysis.product_intelligence_profile,
-      [KEYWORD_INTELLIGENCE_KEY]: { keyword_classifications: analysis.keyword_classifications },
       [KEYWORD_CLARIFICATIONS_KEY]: analysis.clarification_questions,
       [CONFIRMED_KEYWORD_PLAN_KEY]: { ...analysis.confirmed_keyword_plan, confirmed_by_user: confirmPlanByUser },
       keyword_intelligence_rules_applied: analysis.rules_applied ?? analysis.confirmed_keyword_plan.rules_version,
@@ -323,9 +385,25 @@ function KeywordIntelligenceInner() {
         input_fingerprint: currentFingerprint,
         analysis_source: analysisSource,
         computed_at_iso: new Date().toISOString(),
+        analysis_run_id: analysis?.analysis_run_id ?? lastRunMeta?.analysis_run_id ?? null,
+        analysis_started_at: analysis?.analysis_started_at ?? lastRunMeta?.analysis_started_at ?? null,
+        analysis_finished_at: analysis?.analysis_finished_at ?? lastRunMeta?.analysis_finished_at ?? null,
+        analysis_model_used: analysis?.analysis_model_used ?? lastRunMeta?.analysis_model_used ?? null,
+        rows_count: heliumRows.length,
+        rules_version: analysis.rules_applied ?? analysis.confirmed_keyword_plan.rules_version,
+        files_summary: uploadedFiles.map((f) => f.filename).join(", ") || null,
       },
       [KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY]: uploadState,
       [KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY]: manualSeedsText,
+      [KEYWORD_INTELLIGENCE_ROWS_KEY]: heliumRows,
+      [KEYWORD_INTELLIGENCE_FORENSIC_TRACE_KEY]: analysis.forensic_trace ?? null,
+      [KEYWORD_INTELLIGENCE_KEY]: {
+        keyword_classifications: analysis.keyword_classifications,
+        analysis_run_id: analysis.analysis_run_id ?? null,
+        analysis_started_at: analysis.analysis_started_at ?? null,
+        analysis_finished_at: analysis.analysis_finished_at ?? null,
+        analysis_model_used: analysis.analysis_model_used ?? null,
+      },
     };
     const updated = await updateWorkItemResult(workItemId, { input_data: nextInput, status: "in_progress" });
     setBusy(false);
@@ -411,10 +489,42 @@ function KeywordIntelligenceInner() {
             {k.goLegacy}
           </Button>
         </div>
+        {hasUploadedFile && heliumRows.length === 0 ? (
+          <p className="text-xs text-amber-700">
+            File caricato senza righe keyword reidratate: esegui Sostituisci file per forzare parsing fresco ed evitare analisi stale.
+          </p>
+        ) : null}
       </section>
 
       {analysis ? (
         <>
+          <section className="surface-card rounded-4xl p-6 sm:p-8">
+            <h2 className="text-lg font-semibold text-slate-900">Ultima analisi</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Run ID</p>
+                <p className="mt-2 text-sm font-medium text-slate-900 break-all">{lastRunMeta?.analysis_run_id ?? analysis.analysis_run_id ?? "-"}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Timeline</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  {(lastRunMeta?.analysis_started_at ?? analysis.analysis_started_at) || "-"} {" -> "} {(lastRunMeta?.analysis_finished_at ?? analysis.analysis_finished_at) || "-"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Input</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  Righe: {lastRunMeta?.rows_count ?? heliumRows.length} · File: {lastRunMeta?.files_summary ?? uploadState.files.map((f) => f.filename).join(", ") || "-"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Motore</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  Model: {lastRunMeta?.analysis_model_used ?? analysis.analysis_model_used ?? "-"} · Rules: {lastRunMeta?.rules_version ?? analysis.rules_applied}
+                </p>
+              </div>
+            </div>
+          </section>
           <section className="surface-card rounded-4xl p-6 sm:p-8">
             <h2 className="text-lg font-semibold text-slate-900">{k.interpretation.summaryTitle}</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">

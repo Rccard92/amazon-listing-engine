@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import time
 
+from app.core.config import get_settings
 from app.schemas.keyword_intelligence import KeywordClassificationItem, ProductKeywordContext
 from app.services.listing_generation.openai_llm_client import OpenAIListingLLMClient
 
@@ -33,6 +34,12 @@ def _extract_json(raw: str) -> dict:
     if not m:
         raise ValueError("Nessun JSON object")
     return json.loads(m.group(0))
+
+
+def _active_model_name() -> str | None:
+    settings = get_settings()
+    model = (settings.openai_listing_model or settings.openai_model or "").strip()
+    return model or None
 
 
 @dataclass
@@ -67,6 +74,7 @@ class KeywordRefinementService:
                 "allowed_candidates_count": len(allowed_items),
                 "keywords_passed": [item.keyword for item in allowed_items[:120]],
                 "result_items": [],
+                "model_name": None,
             }
             return items, {"refined": 0, "fallback": len(allowed_items)}
         try:
@@ -80,6 +88,7 @@ class KeywordRefinementService:
                 "allowed_candidates_count": len(allowed_items),
                 "keywords_passed": [item.keyword for item in allowed_items[:120]],
                 "result_items": list(refined_map.values())[:120],
+                "model_name": _active_model_name(),
             }
         except Exception as exc:
             self.last_forensic_trace = {
@@ -92,6 +101,7 @@ class KeywordRefinementService:
                 "keywords_passed": [item.keyword for item in allowed_items[:120]],
                 "fallback_reason": str(exc),
                 "result_items": [],
+                "model_name": _active_model_name(),
             }
             return items, {"refined": 0, "fallback": len(allowed_items)}
 

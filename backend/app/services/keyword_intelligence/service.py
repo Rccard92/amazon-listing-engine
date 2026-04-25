@@ -102,11 +102,14 @@ class KeywordIntelligenceService:
         request: KeywordIntelligenceRequest,
         include_debug_trace: bool = False,
     ) -> KeywordIntelligenceResponse:
+        run_id = str(uuid4())
         run_started = datetime.now(timezone.utc)
         trace = DebugTraceCollector(step="keyword_intelligence", enabled=include_debug_trace)
         ctx = _Context(brief=brief, enrichment=enrichment, request=request)
         settings = get_settings()
-        forensic_enabled = bool(settings.keyword_forensic_debug_enabled and request.include_debug_trace)
+        forensic_enabled = bool(
+            settings.keyword_forensic_debug_enabled and (request.include_forensic_trace or request.include_debug_trace)
+        )
         pipeline_applied = (
             "three_layer"
             if settings.enable_keyword_three_layer and request.pipeline_mode == "three_layer"
@@ -218,6 +221,15 @@ class KeywordIntelligenceService:
             trace.add_block(title="Input usati", content=f"File: {len(request.uploaded_files)} · Righe: {len(request.helium10_rows)}")
             trace.add_block(title="Decisioni AI", content=f"Accettate: {len(accepted)} · Escluse: {len(excluded)} · Verifica: {len(verify)}")
             trace.add_block(title="Output finale", content=f"Primaria: {plan.keyword_primaria_finale}")
+        analysis_finished_at = datetime.now(timezone.utc)
+        analysis_model_used = None
+        context_trace = self._context_builder.last_forensic_trace or {}
+        refinement_trace = self._refinement_service.last_forensic_trace or {}
+        if context_trace.get("openai_called"):
+            analysis_model_used = str(context_trace.get("model_name") or "") or None
+        elif refinement_trace.get("openai_called"):
+            analysis_model_used = str(refinement_trace.get("model_name") or "") or None
+
         forensic_trace = None
         if forensic_enabled:
             debug_keywords = ["weber barbecue a gas", "barbecue a pellet da esterno"]
@@ -303,11 +315,15 @@ class KeywordIntelligenceService:
                 else False,
             }
             forensic_trace = {
-                "trace_id": str(uuid4()),
+                "trace_id": run_id,
                 "started_at": run_started.isoformat(),
-                "finished_at": datetime.now(timezone.utc).isoformat(),
-                "duration_ms": int((datetime.now(timezone.utc) - run_started).total_seconds() * 1000),
+                "finished_at": analysis_finished_at.isoformat(),
+                "duration_ms": int((analysis_finished_at - run_started).total_seconds() * 1000),
                 "pipeline_mode": pipeline_applied,
+                "analysis_run_id": run_id,
+                "analysis_started_at": run_started.isoformat(),
+                "analysis_finished_at": analysis_finished_at.isoformat(),
+                "analysis_model_used": analysis_model_used,
                 "stage_outcomes": {
                     "file_ingestion": {
                         "file_detected": bool(request.uploaded_files),
@@ -374,6 +390,10 @@ class KeywordIntelligenceService:
             refinement_summary=refinement_summary,
             forensic_trace=forensic_trace,
             debug_trace=trace.build(),
+            analysis_run_id=run_id,
+            analysis_started_at=run_started.isoformat(),
+            analysis_finished_at=analysis_finished_at.isoformat(),
+            analysis_model_used=analysis_model_used,
         )
 
     def build_product_intelligence_profile(self, ctx: _Context) -> ProductIntelligenceProfile:
