@@ -90,6 +90,7 @@ class KeywordContextBuilderService:
             try:
                 out = self._build_with_ai(brief=brief, enrichment=enrichment, request=request)
                 self.last_forensic_trace = {
+                    "executed": True,
                     "openai_called": True,
                     "mode": "ai",
                     "requested_at": requested_at,
@@ -104,6 +105,7 @@ class KeywordContextBuilderService:
             except Exception as exc:
                 out = self._build_fallback(brief=brief, enrichment=enrichment, request=request)
                 self.last_forensic_trace = {
+                    "executed": True,
                     "openai_called": True,
                     "mode": "fallback",
                     "requested_at": requested_at,
@@ -118,6 +120,7 @@ class KeywordContextBuilderService:
                 return out
         out = self._build_fallback(brief=brief, enrichment=enrichment, request=request)
         self.last_forensic_trace = {
+            "executed": False,
             "openai_called": False,
             "mode": "fallback",
             "requested_at": requested_at,

@@ -1,4 +1,5 @@
 from app.schemas.keyword_intelligence import KeywordIntelligenceRequest
+from app.schemas.analysis_exceptions import AnalysisPipelineError
 from app.schemas.product_brief import ProductBrief
 from app.schemas.strategic_enrichment import StrategicEnrichment
 from app.services.keyword_intelligence import KeywordIntelligenceService
@@ -228,3 +229,62 @@ def test_keyword_intelligence_run_id_changes_between_runs() -> None:
     assert out_a.analysis_run_id is not None
     assert out_b.analysis_run_id is not None
     assert out_a.analysis_run_id != out_b.analysis_run_id
+
+
+def test_keyword_intelligence_fails_when_ai_required_but_not_executed(monkeypatch) -> None:
+    monkeypatch.setenv("ENABLE_KEYWORD_THREE_LAYER", "true")
+    monkeypatch.setenv("ENABLE_KEYWORD_AI_CONTEXT_BUILDER", "false")
+    monkeypatch.setenv("ENABLE_KEYWORD_AI_REFINEMENT", "false")
+    from app.core import config
+
+    config.get_settings.cache_clear()
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(nome_prodotto="Barbecue gas", categoria="Giardino", keyword_primarie=["barbecue gas"])
+    req = KeywordIntelligenceRequest(
+        pipeline_mode="three_layer",
+        enable_ai_context_builder=True,
+        enable_ai_refinement=True,
+        require_ai_execution=True,
+        helium10_rows=[{"keyword": "barbecue gas da esterno"}],
+    )
+    try:
+        service.run(brief=brief, enrichment=None, request=req)
+        assert False, "Atteso AnalysisPipelineError quando AI richiesta ma non eseguita"
+    except AnalysisPipelineError as exc:
+        assert exc.message_it == "Keyword Intelligence incompleta: fallback non consentito"
+
+
+def test_keyword_intelligence_marks_valid_ai_run_when_context_ai_executed(monkeypatch) -> None:
+    monkeypatch.setenv("ENABLE_KEYWORD_THREE_LAYER", "true")
+    monkeypatch.setenv("ENABLE_KEYWORD_AI_CONTEXT_BUILDER", "true")
+    monkeypatch.setenv("ENABLE_KEYWORD_AI_REFINEMENT", "false")
+    from app.core import config
+
+    config.get_settings.cache_clear()
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(nome_prodotto="Barbecue gas", categoria="Giardino", keyword_primarie=["barbecue gas"])
+    req = KeywordIntelligenceRequest(
+        pipeline_mode="three_layer",
+        enable_ai_context_builder=True,
+        require_ai_execution=True,
+        helium10_rows=[{"keyword": "barbecue gas da esterno"}],
+    )
+
+    original_build = service._context_builder.build
+
+    def _fake_build(*args, **kwargs):  # type: ignore[no-untyped-def]
+        out = original_build(*args, **kwargs)
+        service._context_builder.last_forensic_trace = {
+            "executed": True,
+            "openai_called": True,
+            "fallback_used": False,
+            "fallback_reason": None,
+            "model_name": "gpt-test",
+        }
+        return out
+
+    service._context_builder.build = _fake_build  # type: ignore[method-assign]
+    out = service.run(brief=brief, enrichment=None, request=req)
+    assert out.valid_ai_run is True
+    assert out.final_source_of_truth == "ai"
+    assert out.model_name == "gpt-test"

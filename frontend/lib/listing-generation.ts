@@ -183,6 +183,7 @@ export type KeywordIntelligenceRequest = {
   enable_ai_context_builder?: boolean;
   enable_deterministic_veto?: boolean;
   enable_ai_refinement?: boolean;
+  require_ai_execution?: boolean;
   forensic_fingerprint?: string | null;
   forensic_input_meta?: Record<string, unknown>;
 };
@@ -197,6 +198,15 @@ export type KeywordForensicTrace = {
   analysis_started_at?: string;
   analysis_finished_at?: string;
   analysis_model_used?: string | null;
+  ai_context_builder_executed?: boolean;
+  ai_refinement_executed?: boolean;
+  fallback_used?: boolean;
+  fallback_reason?: string | null;
+  model_name?: string | null;
+  rules_version?: string;
+  parsed_keyword_count?: number;
+  final_source_of_truth?: "ai" | "fallback" | "stale_cache" | "unknown";
+  valid_ai_run?: boolean;
   stage_outcomes: Record<string, unknown>;
   fallbacks: Array<Record<string, unknown>>;
   keywords_debug_map: Array<Record<string, unknown>>;
@@ -221,6 +231,14 @@ export type KeywordIntelligenceResponse = {
   analysis_started_at?: string | null;
   analysis_finished_at?: string | null;
   analysis_model_used?: string | null;
+  ai_context_builder_executed?: boolean;
+  ai_refinement_executed?: boolean;
+  fallback_used?: boolean;
+  fallback_reason?: string | null;
+  model_name?: string | null;
+  parsed_keyword_count?: number;
+  final_source_of_truth?: "ai" | "fallback" | "stale_cache" | "unknown";
+  valid_ai_run?: boolean;
 };
 
 export type StrategicEnrichmentResponse = {

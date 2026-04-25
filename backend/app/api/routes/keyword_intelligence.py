@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.session import get_db
+from app.schemas.analysis_exceptions import AnalysisPipelineError
 from app.schemas.keyword_intelligence import KeywordIntelligenceRequest, KeywordIntelligenceResponse
 from app.schemas.product_brief import ProductBrief
 from app.schemas.strategic_enrichment import StrategicEnrichment
@@ -17,6 +18,17 @@ from app.services.work_item_service import WorkItemService
 router = APIRouter()
 _service = KeywordIntelligenceService()
 _work_items = WorkItemService()
+
+
+def _http_from_pipeline(exc: AnalysisPipelineError) -> HTTPException:
+    return HTTPException(
+        status_code=exc.http_status,
+        detail={
+            "error_code": exc.error_code,
+            "message_it": exc.message_it,
+            "details": exc.details,
+        },
+    )
 
 
 @router.post(
@@ -43,9 +55,12 @@ def build_keyword_intelligence_for_work_item(
     enr_raw = raw.get(STRATEGIC_ENRICHMENT_KEY)
     enrichment = StrategicEnrichment.model_validate(enr_raw) if isinstance(enr_raw, dict) else None
     trace_enabled = bool(get_settings().enable_ai_debug_trace and payload.include_debug_trace)
-    return _service.run_with_trace(
-        brief=brief,
-        enrichment=enrichment,
-        request=payload,
-        include_debug_trace=trace_enabled,
-    )
+    try:
+        return _service.run_with_trace(
+            brief=brief,
+            enrichment=enrichment,
+            request=payload,
+            include_debug_trace=trace_enabled,
+        )
+    except AnalysisPipelineError as exc:
+        raise _http_from_pipeline(exc) from exc

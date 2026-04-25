@@ -66,6 +66,7 @@ class KeywordRefinementService:
         ]
         if not enable_ai or not allowed_items:
             self.last_forensic_trace = {
+                "executed": False,
                 "openai_called": False,
                 "mode": "disabled_or_empty",
                 "requested_at": requested_at,
@@ -80,6 +81,7 @@ class KeywordRefinementService:
         try:
             refined_map = self._refine_with_ai(allowed_items=allowed_items, context=context)
             self.last_forensic_trace = {
+                "executed": True,
                 "openai_called": True,
                 "mode": "ai",
                 "requested_at": requested_at,
@@ -92,6 +94,7 @@ class KeywordRefinementService:
             }
         except Exception as exc:
             self.last_forensic_trace = {
+                "executed": True,
                 "openai_called": True,
                 "mode": "fallback",
                 "requested_at": requested_at,

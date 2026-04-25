@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from app.core.config import get_settings
 from app.core.keyword_intelligence_rules import get_keyword_intelligence_rules_bundle
+from app.schemas.analysis_exceptions import AnalysisPipelineError
 from app.schemas.keyword_intelligence import (
     ClarificationQuestion,
     ConfirmedKeywordPlan,
@@ -225,10 +226,49 @@ class KeywordIntelligenceService:
         analysis_model_used = None
         context_trace = self._context_builder.last_forensic_trace or {}
         refinement_trace = self._refinement_service.last_forensic_trace or {}
-        if context_trace.get("openai_called"):
-            analysis_model_used = str(context_trace.get("model_name") or "") or None
-        elif refinement_trace.get("openai_called"):
-            analysis_model_used = str(refinement_trace.get("model_name") or "") or None
+        ai_context_builder_executed = bool(context_trace.get("openai_called"))
+        ai_refinement_executed = bool(refinement_trace.get("openai_called"))
+        context_fallback_used = bool(context_trace.get("fallback_used"))
+        refinement_fallback_used = bool(refinement_trace.get("fallback_used"))
+        fallback_used = context_fallback_used or refinement_fallback_used
+        fallback_reason = (
+            str(context_trace.get("fallback_reason") or "")
+            or str(refinement_trace.get("fallback_reason") or "")
+            or None
+        )
+        model_name = (
+            str(context_trace.get("model_name") or "")
+            or str(refinement_trace.get("model_name") or "")
+            or None
+        )
+        if ai_context_builder_executed:
+            analysis_model_used = model_name
+        elif ai_refinement_executed:
+            analysis_model_used = model_name
+        parsed_keyword_count = len([row for row in request.helium10_rows if (row.keyword or "").strip()])
+        final_source_of_truth = (
+            "ai"
+            if (ai_context_builder_executed or ai_refinement_executed) and not fallback_used and bool(model_name)
+            else "fallback"
+            if fallback_used or pipeline_applied == "legacy"
+            else "unknown"
+        )
+        valid_ai_run = final_source_of_truth == "ai"
+        if request.require_ai_execution and not valid_ai_run:
+            reason = fallback_reason or "Motore AI non disponibile o non eseguito."
+            raise AnalysisPipelineError(
+                "OPENAI_REQUEST_FAILED",
+                http_status=503,
+                message_it="Keyword Intelligence incompleta: fallback non consentito",
+                details=(
+                    "Analisi AI non eseguita. "
+                    f"ai_context_builder_executed={ai_context_builder_executed}, "
+                    f"ai_refinement_executed={ai_refinement_executed}, "
+                    f"model_name={model_name or 'null'}, "
+                    f"source={final_source_of_truth}, "
+                    f"reason={reason}"
+                ),
+            )
 
         forensic_trace = None
         if forensic_enabled:
@@ -324,6 +364,15 @@ class KeywordIntelligenceService:
                 "analysis_started_at": run_started.isoformat(),
                 "analysis_finished_at": analysis_finished_at.isoformat(),
                 "analysis_model_used": analysis_model_used,
+                "ai_context_builder_executed": ai_context_builder_executed,
+                "ai_refinement_executed": ai_refinement_executed,
+                "fallback_used": fallback_used,
+                "fallback_reason": fallback_reason,
+                "model_name": model_name,
+                "rules_version": self._rules_version,
+                "parsed_keyword_count": parsed_keyword_count,
+                "final_source_of_truth": final_source_of_truth,
+                "valid_ai_run": valid_ai_run,
                 "stage_outcomes": {
                     "file_ingestion": {
                         "file_detected": bool(request.uploaded_files),
@@ -394,6 +443,14 @@ class KeywordIntelligenceService:
             analysis_started_at=run_started.isoformat(),
             analysis_finished_at=analysis_finished_at.isoformat(),
             analysis_model_used=analysis_model_used,
+            ai_context_builder_executed=ai_context_builder_executed,
+            ai_refinement_executed=ai_refinement_executed,
+            fallback_used=fallback_used,
+            fallback_reason=fallback_reason,
+            model_name=model_name,
+            parsed_keyword_count=parsed_keyword_count,
+            final_source_of_truth=final_source_of_truth,
+            valid_ai_run=valid_ai_run,
         )
 
     def build_product_intelligence_profile(self, ctx: _Context) -> ProductIntelligenceProfile:

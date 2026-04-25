@@ -138,6 +138,7 @@ class KeywordIntelligenceRequest(BaseModel):
     enable_ai_context_builder: bool = False
     enable_deterministic_veto: bool = True
     enable_ai_refinement: bool = False
+    require_ai_execution: bool = False
     forensic_fingerprint: str | None = None
     forensic_input_meta: dict[str, Any] = Field(default_factory=dict)
 
@@ -159,3 +160,11 @@ class KeywordIntelligenceResponse(BaseModel):
     analysis_started_at: str | None = None
     analysis_finished_at: str | None = None
     analysis_model_used: str | None = None
+    ai_context_builder_executed: bool = False
+    ai_refinement_executed: bool = False
+    fallback_used: bool = False
+    fallback_reason: str | None = None
+    model_name: str | None = None
+    parsed_keyword_count: int = 0
+    final_source_of_truth: Literal["ai", "fallback", "stale_cache", "unknown"] = "unknown"
+    valid_ai_run: bool = False
