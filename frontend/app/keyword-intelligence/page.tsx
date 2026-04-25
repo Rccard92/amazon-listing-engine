@@ -514,7 +514,7 @@ function KeywordIntelligenceInner() {
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Input</p>
                 <p className="mt-2 text-sm font-medium text-slate-900">
-                  Righe: {lastRunMeta?.rows_count ?? heliumRows.length} · File: {lastRunMeta?.files_summary ?? uploadState.files.map((f) => f.filename).join(", ") || "-"}
+                  Righe: {lastRunMeta?.rows_count ?? heliumRows.length} · File: {lastRunMeta?.files_summary || uploadState.files.map((f) => f.filename).join(", ") || "-"}
                 </p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
