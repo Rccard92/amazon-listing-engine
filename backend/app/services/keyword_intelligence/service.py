@@ -220,6 +220,7 @@ class KeywordIntelligenceService:
             trace.add_block(title="Output finale", content=f"Primaria: {plan.keyword_primaria_finale}")
         forensic_trace = None
         if forensic_enabled:
+            debug_keywords = ["weber barbecue a gas", "barbecue a pellet da esterno"]
             rule_bundle = get_keyword_intelligence_rules_bundle()
             rules_path = Path(rule_bundle.source_path)
             rules_hash = ""
@@ -235,6 +236,61 @@ class KeywordIntelligenceService:
             sample_size = max(1, int(settings.keyword_forensic_debug_sample_size))
             if not settings.keyword_forensic_debug_full_keyword_map:
                 keywords_map = keywords_map[:sample_size]
+            decision_index = {
+                str(item.get("normalized_keyword") or ""): item
+                for item in (self._veto_engine.last_keyword_decisions or [])
+            }
+            classification_index = {_norm(item.keyword): item for item in classifications}
+            frontend_set = {_norm(x) for x in plan.parole_da_spingere_nel_frontend}
+            backend_set = {_norm(x) for x in plan.parole_da_tenere_per_backend}
+            verify_set = {
+                _norm(item.keyword)
+                for item in plan.classificazioni_confermate
+                if item.category == "VERIFY_PRODUCT_FEATURE" or item.required_user_confirmation
+            }
+            excluded_map = {_norm(item.keyword): item for item in plan.keyword_escluse_definitivamente}
+
+            explicit_debug_cases: list[dict[str, object]] = []
+            for raw_kw in debug_keywords:
+                norm_kw = _norm(raw_kw)
+                veto_decision = decision_index.get(norm_kw, {})
+                cls_item = classification_index.get(norm_kw)
+                if norm_kw in excluded_map:
+                    final_bucket = "keyword_escluse"
+                    final_reason = excluded_map[norm_kw].excluded_reason_type or excluded_map[norm_kw].rationale
+                elif norm_kw in verify_set:
+                    final_bucket = "keyword_da_verificare"
+                    final_reason = cls_item.rationale if cls_item else "verify_required"
+                elif norm_kw in backend_set:
+                    final_bucket = "keyword_backend"
+                    final_reason = cls_item.rationale if cls_item else "accepted_backend"
+                elif norm_kw in frontend_set:
+                    final_bucket = "keyword_contenuti"
+                    final_reason = cls_item.rationale if cls_item else "accepted_content"
+                else:
+                    final_bucket = "not_present"
+                    final_reason = "keyword_non_presente_nel_run"
+                explicit_debug_cases.append(
+                    {
+                        "keyword": raw_kw,
+                        "normalized_keyword": norm_kw,
+                        "competitor_brand_match": bool(veto_decision.get("competitor_brand_match", False)),
+                        "forbidden_concept_match": bool(veto_decision.get("forbidden_concept_match", False)),
+                        "uncertain_attribute_match": bool(veto_decision.get("uncertain_attribute_match", False)),
+                        "veto_result": veto_decision.get("decision", "not_evaluated"),
+                        "refinement_result": (
+                            {
+                                "category": cls_item.category,
+                                "recommended_usage": cls_item.recommended_usage,
+                                "priority": cls_item.priority,
+                            }
+                            if cls_item
+                            else None
+                        ),
+                        "final_bucket": final_bucket,
+                        "final_reason": final_reason,
+                    }
+                )
             freshness = {
                 "analysis_source": "fresh_run",
                 "input_fingerprint": request.forensic_fingerprint,
@@ -302,6 +358,7 @@ class KeywordIntelligenceService:
                 if self._context_builder.last_forensic_trace and self._context_builder.last_forensic_trace.get("fallback_used")
                 else [],
                 "keywords_debug_map": keywords_map,
+                "explicit_debug_cases": explicit_debug_cases,
                 "freshness": freshness,
             }
         return KeywordIntelligenceResponse(

@@ -196,3 +196,16 @@ def test_keyword_intelligence_forensic_trace_enabled(monkeypatch) -> None:
     assert out.forensic_trace["pipeline_mode"] == "three_layer"
     assert "stage_outcomes" in out.forensic_trace
     assert "keywords_debug_map" in out.forensic_trace
+    explicit_cases = out.forensic_trace["explicit_debug_cases"]
+    assert isinstance(explicit_cases, list)
+    assert any(case["keyword"] == "weber barbecue a gas" for case in explicit_cases)
+    assert any(case["keyword"] == "barbecue a pellet da esterno" for case in explicit_cases)
+    for case in explicit_cases:
+        assert "normalized_keyword" in case
+        assert "competitor_brand_match" in case
+        assert "forbidden_concept_match" in case
+        assert "uncertain_attribute_match" in case
+        assert "veto_result" in case
+        assert "refinement_result" in case
+        assert "final_bucket" in case
+        assert "final_reason" in case
