@@ -3,7 +3,10 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { AiTracePanel } from "@/components/ai-trace/ai-trace-panel";
+import { DebugTraceCollapsible } from "@/components/keyword-intelligence/debug-trace-collapsible";
+import { FinalKeywordPlanCard } from "@/components/keyword-intelligence/final-keyword-plan-card";
+import { KeywordDecisionsBoard } from "@/components/keyword-intelligence/keyword-decisions-board";
+import { ProductInterpretationCard } from "@/components/keyword-intelligence/product-interpretation-card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadDropzone } from "@/components/ui/upload-dropzone";
@@ -23,6 +26,20 @@ import {
 import { getWorkItemResult, updateWorkItemResult } from "@/lib/work-items";
 
 const k = it.keywordIntelligence;
+
+function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
+  return {
+    schema_version: raw.schema_version ?? "v1",
+    keyword_primaria_finale: raw.keyword_primaria_finale ?? "",
+    keyword_secondarie_prioritarie: raw.keyword_secondarie_prioritarie ?? [],
+    parole_da_spingere_nel_frontend: raw.parole_da_spingere_nel_frontend ?? [],
+    parole_da_tenere_per_backend: raw.parole_da_tenere_per_backend ?? [],
+    keyword_escluse_definitivamente: raw.keyword_escluse_definitivamente ?? [],
+    note_su_keyword_da_non_forzare: raw.note_su_keyword_da_non_forzare ?? [],
+    classificazioni_confermate: raw.classificazioni_confermate ?? [],
+    confirmed_by_user: Boolean(raw.confirmed_by_user),
+  };
+}
 
 function splitLines(value: string): string[] {
   return value
@@ -58,6 +75,7 @@ function KeywordIntelligenceInner() {
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [aiDebugEnabled, setAiDebugEnabled] = useState(false);
+  const [confirmPlanByUser, setConfirmPlanByUser] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,13 +102,15 @@ function KeywordIntelligenceInner() {
       const clarRaw = input[KEYWORD_CLARIFICATIONS_KEY];
       const confirmedRaw = input[CONFIRMED_KEYWORD_PLAN_KEY];
       if (aiRaw && profileRaw && confirmedRaw && typeof aiRaw === "object" && typeof profileRaw === "object") {
+        const confirmedPlan = normalizeConfirmedPlan(confirmedRaw as ConfirmedKeywordPlan);
         setAnalysis({
           product_intelligence_profile: profileRaw as KeywordIntelligenceResponse["product_intelligence_profile"],
           keyword_classifications: (aiRaw as { keyword_classifications?: KeywordClassificationItem[] }).keyword_classifications ?? [],
           clarification_questions:
             (clarRaw as KeywordIntelligenceResponse["clarification_questions"]) ?? [],
-          confirmed_keyword_plan: confirmedRaw as ConfirmedKeywordPlan,
+          confirmed_keyword_plan: confirmedPlan,
         });
+        setConfirmPlanByUser(Boolean(confirmedPlan.confirmed_by_user));
       }
     }
     void load();
@@ -127,6 +147,7 @@ function KeywordIntelligenceInner() {
       helium10_rows: heliumRows,
       uploaded_files: uploadedFiles,
       clarification_answers: clarificationAnswers,
+      confirm_plan_by_user: confirmPlanByUser,
       include_debug_trace: aiDebugEnabled,
     });
     setBusy(false);
@@ -134,7 +155,9 @@ function KeywordIntelligenceInner() {
       setError(response.error?.message_it ?? it.workflowErrors.UNKNOWN);
       return;
     }
-    setAnalysis(response.intelligence);
+    const normalizedPlan = normalizeConfirmedPlan(response.intelligence.confirmed_keyword_plan);
+    setAnalysis({ ...response.intelligence, confirmed_keyword_plan: normalizedPlan });
+    setConfirmPlanByUser(Boolean(normalizedPlan.confirmed_by_user));
   }
 
   async function savePlan(): Promise<boolean> {
@@ -152,7 +175,7 @@ function KeywordIntelligenceInner() {
       [PRODUCT_INTELLIGENCE_PROFILE_KEY]: analysis.product_intelligence_profile,
       [KEYWORD_INTELLIGENCE_KEY]: { keyword_classifications: analysis.keyword_classifications },
       [KEYWORD_CLARIFICATIONS_KEY]: analysis.clarification_questions,
-      [CONFIRMED_KEYWORD_PLAN_KEY]: analysis.confirmed_keyword_plan,
+      [CONFIRMED_KEYWORD_PLAN_KEY]: { ...analysis.confirmed_keyword_plan, confirmed_by_user: confirmPlanByUser },
     };
     const updated = await updateWorkItemResult(workItemId, { input_data: nextInput, status: "in_progress" });
     setBusy(false);
@@ -207,41 +230,15 @@ function KeywordIntelligenceInner() {
             {k.goLegacy}
           </Button>
         </div>
-        {aiDebugEnabled ? <AiTracePanel trace={analysis?.debug_trace} /> : null}
       </section>
 
       {analysis ? (
-        <section className="surface-card rounded-4xl p-6 sm:p-8 space-y-5">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">{k.sections.detected}</h2>
-            <p className="mt-1 text-sm text-slate-700">
-              {analysis.product_intelligence_profile.product_detected || "-"} ·{" "}
-              {analysis.product_intelligence_profile.category_detected || "categoria non definita"}
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{k.sections.attrsMain}</h3>
-            <ul className="mt-2 space-y-1 text-sm text-slate-700">
-              {analysis.product_intelligence_profile.main_detected_attributes.slice(0, 8).map((a, i) => (
-                <li key={`${a.name}-${i}`}>{a.name}: {a.value}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{k.sections.attrsExcluded}</h3>
-            <p className="mt-1 text-sm text-slate-700">
-              {analysis.product_intelligence_profile.excluded_attributes.join(" | ") || "-"}
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{k.sections.attrsUncertain}</h3>
-            <p className="mt-1 text-sm text-slate-700">
-              {analysis.product_intelligence_profile.uncertain_attributes.join(" | ") || "-"}
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{k.sections.clarifications}</h3>
-            <div className="mt-2 space-y-2">
+        <>
+          <ProductInterpretationCard profile={analysis.product_intelligence_profile} />
+          <KeywordDecisionsBoard items={analysis.keyword_classifications} />
+          <section className="surface-card rounded-4xl p-6 sm:p-8 space-y-5">
+            <h2 className="text-lg font-semibold text-slate-900">{k.sections.clarifications}</h2>
+            <div className="space-y-2">
               {analysis.clarification_questions.length === 0 ? (
                 <p className="text-sm text-slate-700">Nessuna domanda aperta.</p>
               ) : (
@@ -259,32 +256,40 @@ function KeywordIntelligenceInner() {
                 ))
               )}
             </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{k.sections.classifications}</h3>
-            <p className="mt-1 text-xs text-slate-500">
-              {analysis.keyword_classifications.length} keyword classificate
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{k.sections.confirmedPlan}</h3>
-            <p className="mt-1 text-sm text-slate-700">
-              Primaria: {analysis.confirmed_keyword_plan.keyword_primaria_finale || "-"}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={() => void handleGoBack()} disabled={busy} className="sm:mr-auto">
-              Indietro
-            </Button>
-            {hint ? <span className="text-xs text-slate-500">{hint}</span> : null}
-            <Button type="button" variant="secondary" onClick={() => void savePlan()} disabled={busy}>
-              {k.save}
-            </Button>
-            <Button type="button" onClick={() => void handleGoGenerate()} disabled={busy}>
-              {k.goGenerate}
-            </Button>
-          </div>
-        </section>
+          </section>
+          <FinalKeywordPlanCard plan={{ ...analysis.confirmed_keyword_plan, confirmed_by_user: confirmPlanByUser }} />
+          <section className="surface-card rounded-4xl p-6 sm:p-8">
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+              <label className="flex items-center gap-2 text-sm text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={confirmPlanByUser}
+                  onChange={(e) => setConfirmPlanByUser(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                {k.planConfirmLabel}
+              </label>
+              <span className="ml-auto rounded-xl bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                {confirmPlanByUser ? k.planConfirmedBadge : k.planNotConfirmedBadge}
+              </span>
+            </div>
+          </section>
+          {aiDebugEnabled ? <DebugTraceCollapsible trace={analysis.debug_trace ?? null} /> : null}
+          <section className="surface-card rounded-4xl p-6 sm:p-8">
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={() => void handleGoBack()} disabled={busy} className="sm:mr-auto">
+                Indietro
+              </Button>
+              {hint ? <span className="text-xs text-slate-500">{hint}</span> : null}
+              <Button type="button" variant="secondary" onClick={() => void savePlan()} disabled={busy}>
+                {k.save}
+              </Button>
+              <Button type="button" onClick={() => void handleGoGenerate()} disabled={busy || !confirmPlanByUser}>
+                {k.goGenerate}
+              </Button>
+            </div>
+          </section>
+        </>
       ) : null}
     </main>
   );

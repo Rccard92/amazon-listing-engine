@@ -36,6 +36,23 @@ def _dedupe(values: list[str]) -> list[str]:
     return out
 
 
+def _compute_profile_confidence(
+    *,
+    product_name: str,
+    category: str | None,
+    attributes_count: int,
+    uncertain_count: int,
+) -> float:
+    score = 0.45
+    if product_name.strip():
+        score += 0.2
+    if (category or "").strip():
+        score += 0.15
+    score += min(attributes_count, 10) * 0.02
+    score -= min(uncertain_count, 4) * 0.04
+    return max(0.0, min(1.0, round(score, 2)))
+
+
 @dataclass
 class _Context:
     brief: ProductBrief
@@ -91,7 +108,7 @@ class KeywordIntelligenceService:
                     reason="Presenti termini con possibile ambiguita su compatibilita/caratteristiche.",
                 )
             trace.questions_raised = [q.question for q in clarifications]
-            trace.confidence_score = 0.84 if accepted else 0.62
+            trace.confidence_score = profile.confidence_score
             trace.final_output = {
                 "keyword_primaria_finale": plan.keyword_primaria_finale,
                 "keyword_secondarie_prioritarie": plan.keyword_secondarie_prioritarie[:12],
@@ -158,6 +175,12 @@ class KeywordIntelligenceService:
             excluded_attributes=excluded,
             uncertain_attributes=uncertain,
             keyword_seed_pool=seed_pool,
+            confidence_score=_compute_profile_confidence(
+                product_name=brief.nome_prodotto,
+                category=brief.categoria,
+                attributes_count=len(attributes),
+                uncertain_count=len(uncertain),
+            ),
         )
 
     def classify_keywords(
@@ -177,34 +200,70 @@ class KeywordIntelligenceService:
             if not kw:
                 continue
             words = kw.split(" ")
+            priority = "medium"
+            recommended_usage = "bullets_description"
+            required_user_confirmation = False
+            excluded_reason_type = None
             if kw in primary_set:
                 category = "PRIMARY_SEO"
                 confidence = 0.92
+                priority = "high"
+                recommended_usage = "title"
                 rationale = "Presente nel seed prioritario."
+            elif any(brand_kw in kw for brand_kw in ("nike", "adidas", "apple", "samsung")):
+                category = "BRANDED_COMPETITOR"
+                confidence = 0.9
+                priority = "high"
+                recommended_usage = "exclude"
+                excluded_reason_type = "competitor_brand"
+                rationale = "Termine brand competitor: non va usato nel listing."
             elif any(token and token in kw for token in feature_tokens):
                 category = "FEATURE_KEYWORD"
                 confidence = 0.8
+                priority = "high"
+                recommended_usage = "bullets_description"
                 rationale = "Allineata ad attributi di prodotto rilevati."
             elif len(words) >= 4:
                 category = "LONG_TAIL"
                 confidence = 0.74
+                priority = "medium"
+                recommended_usage = "backend_search_terms"
                 rationale = "Query lunga con intento specifico."
-            elif "compatib" in kw or "ricambio" in kw:
+            elif "compatib" in kw:
                 category = "VERIFY_PRODUCT_FEATURE"
                 confidence = 0.65
+                priority = "medium"
+                recommended_usage = "verify"
+                required_user_confirmation = True
                 rationale = "Richiede verifica compatibilita/caratteristica."
             elif "gratis" in kw or "download" in kw:
                 category = "NEGATIVE_KEYWORD"
                 confidence = 0.9
+                priority = "high"
+                recommended_usage = "exclude"
+                excluded_reason_type = "irrelevant_intent"
                 rationale = "Intento non coerente con prodotto Amazon."
+            elif "ricambio" in kw:
+                category = "OFF_TARGET"
+                confidence = 0.83
+                priority = "high"
+                recommended_usage = "exclude"
+                excluded_reason_type = "off_target"
+                rationale = "Keyword non coerente con il posizionamento del prodotto."
             else:
                 category = "SECONDARY_SEO"
                 confidence = 0.7
+                priority = "medium"
+                recommended_usage = "bullets_description"
                 rationale = "Keyword pertinente ma non primaria."
             out.append(
                 KeywordClassificationItem(
                     keyword=kw,
                     category=category,
+                    priority=priority,
+                    recommended_usage=recommended_usage,
+                    required_user_confirmation=required_user_confirmation,
+                    excluded_reason_type=excluded_reason_type,
                     confidence=confidence,
                     rationale=rationale,
                     source="helium10" if ctx.request.helium10_rows else "manual_seed",
@@ -265,12 +324,18 @@ class KeywordIntelligenceService:
             "Confermare keyword VERIFY_PRODUCT_FEATURE prima della pubblicazione.",
             "Evitare keyword OFF_TARGET/NEGATIVE in titolo, bullet e backend terms.",
         ]
+        definitively_excluded = [
+            item
+            for item in classifications
+            if item.category in ("OFF_TARGET", "NEGATIVE_KEYWORD", "BRANDED_COMPETITOR")
+        ]
         return ConfirmedKeywordPlan(
             keyword_primaria_finale=(primary_candidates[0] if primary_candidates else profile.product_detected),
             keyword_secondarie_prioritarie=secondary[:20],
             parole_da_spingere_nel_frontend=frontend_push[:16],
             parole_da_tenere_per_backend=backend_pool[:24],
+            keyword_escluse_definitivamente=definitively_excluded[:40],
             note_su_keyword_da_non_forzare=notes,
             classificazioni_confermate=classifications[:150],
-            confirmed_by_user=bool(classifications),
+            confirmed_by_user=ctx.request.confirm_plan_by_user,
         )

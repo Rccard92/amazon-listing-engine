@@ -25,8 +25,10 @@ def test_keyword_intelligence_builds_profile_and_plan() -> None:
     out = service.run(brief=brief, enrichment=enrichment, request=req)
     assert out.product_intelligence_profile.product_detected == "Organizer cavi"
     assert out.keyword_classifications
+    assert out.product_intelligence_profile.confidence_score > 0
     assert out.confirmed_keyword_plan.keyword_primaria_finale
-    assert out.confirmed_keyword_plan.confirmed_by_user is True
+    assert out.confirmed_keyword_plan.confirmed_by_user is False
+    assert isinstance(out.confirmed_keyword_plan.keyword_escluse_definitivamente, list)
     assert out.debug_trace is None
 
 
@@ -36,6 +38,7 @@ def test_keyword_intelligence_generates_clarification_without_category() -> None
     req = KeywordIntelligenceRequest(manual_seed_keywords=["ricambio compatibile x"], helium10_rows=[])
     out = service.run(brief=brief, enrichment=None, request=req)
     assert any(q.id == "category_confirm" for q in out.clarification_questions)
+    assert any(item.required_user_confirmation for item in out.keyword_classifications)
 
 
 def test_keyword_intelligence_debug_trace_enabled() -> None:
@@ -55,3 +58,15 @@ def test_keyword_intelligence_debug_trace_enabled() -> None:
     assert out.debug_trace is not None
     assert out.debug_trace.step == "keyword_intelligence"
     assert out.debug_trace.data.decisions
+
+
+def test_keyword_intelligence_sets_explicit_user_confirmation() -> None:
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(nome_prodotto="Prodotto conferma", categoria="Casa", keyword_primarie=["supporto cavi"])
+    req = KeywordIntelligenceRequest(
+        manual_seed_keywords=["supporto cavi"],
+        helium10_rows=[{"keyword": "supporto cavi da scrivania"}],
+        confirm_plan_by_user=True,
+    )
+    out = service.run(brief=brief, enrichment=None, request=req)
+    assert out.confirmed_keyword_plan.confirmed_by_user is True

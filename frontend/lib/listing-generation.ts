@@ -77,6 +77,10 @@ export type KeywordCategory =
   | "VERIFY_PRODUCT_FEATURE"
   | "NEGATIVE_KEYWORD";
 
+export type KeywordPriority = "high" | "medium" | "low";
+export type KeywordUsage = "title" | "bullets_description" | "backend_search_terms" | "exclude" | "verify";
+export type ExcludedReasonType = "off_target" | "competitor_brand" | "invalid_feature_match" | "irrelevant_intent";
+
 export type ProductAttributeSignal = {
   name: string;
   value: string;
@@ -92,11 +96,16 @@ export type ProductIntelligenceProfile = {
   excluded_attributes: string[];
   uncertain_attributes: string[];
   keyword_seed_pool: string[];
+  confidence_score: number;
 };
 
 export type KeywordClassificationItem = {
   keyword: string;
   category: KeywordCategory;
+  priority: KeywordPriority;
+  recommended_usage: KeywordUsage;
+  required_user_confirmation: boolean;
+  excluded_reason_type: ExcludedReasonType | null;
   confidence: number;
   rationale: string;
   source: string;
@@ -116,6 +125,7 @@ export type ConfirmedKeywordPlan = {
   keyword_secondarie_prioritarie: string[];
   parole_da_spingere_nel_frontend: string[];
   parole_da_tenere_per_backend: string[];
+  keyword_escluse_definitivamente: KeywordClassificationItem[];
   note_su_keyword_da_non_forzare: string[];
   classificazioni_confermate: KeywordClassificationItem[];
   confirmed_by_user: boolean;
@@ -138,6 +148,7 @@ export type KeywordIntelligenceRequest = {
   helium10_rows: Helium10KeywordRow[];
   uploaded_files: KeywordIntelligenceUploadedFile[];
   clarification_answers: Record<string, string>;
+  confirm_plan_by_user?: boolean;
   include_debug_trace?: boolean;
 };
 

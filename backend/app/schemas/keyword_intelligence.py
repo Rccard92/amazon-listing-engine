@@ -22,6 +22,10 @@ KeywordCategory = Literal[
     "NEGATIVE_KEYWORD",
 ]
 
+KeywordPriority = Literal["high", "medium", "low"]
+KeywordUsage = Literal["title", "bullets_description", "backend_search_terms", "exclude", "verify"]
+ExcludedReasonType = Literal["off_target", "competitor_brand", "invalid_feature_match", "irrelevant_intent"]
+
 
 class KeywordIntelligenceUploadedFile(BaseModel):
     filename: str
@@ -50,11 +54,16 @@ class ProductIntelligenceProfile(BaseModel):
     excluded_attributes: list[str] = Field(default_factory=list)
     uncertain_attributes: list[str] = Field(default_factory=list)
     keyword_seed_pool: list[str] = Field(default_factory=list)
+    confidence_score: float = 0.0
 
 
 class KeywordClassificationItem(BaseModel):
     keyword: str
     category: KeywordCategory
+    priority: KeywordPriority = "medium"
+    recommended_usage: KeywordUsage = "bullets_description"
+    required_user_confirmation: bool = False
+    excluded_reason_type: ExcludedReasonType | None = None
     confidence: float = 0.0
     rationale: str = ""
     source: str = "helium10"
@@ -74,6 +83,7 @@ class ConfirmedKeywordPlan(BaseModel):
     keyword_secondarie_prioritarie: list[str] = Field(default_factory=list)
     parole_da_spingere_nel_frontend: list[str] = Field(default_factory=list)
     parole_da_tenere_per_backend: list[str] = Field(default_factory=list)
+    keyword_escluse_definitivamente: list[KeywordClassificationItem] = Field(default_factory=list)
     note_su_keyword_da_non_forzare: list[str] = Field(default_factory=list)
     classificazioni_confermate: list[KeywordClassificationItem] = Field(default_factory=list)
     confirmed_by_user: bool = False
@@ -84,6 +94,7 @@ class KeywordIntelligenceRequest(BaseModel):
     helium10_rows: list[Helium10KeywordRow] = Field(default_factory=list)
     uploaded_files: list[KeywordIntelligenceUploadedFile] = Field(default_factory=list)
     clarification_answers: dict[str, str] = Field(default_factory=dict)
+    confirm_plan_by_user: bool = False
     include_debug_trace: bool = False
 
 
