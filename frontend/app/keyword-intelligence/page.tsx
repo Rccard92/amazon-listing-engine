@@ -554,6 +554,19 @@ function KeywordIntelligenceInner() {
             {k.goLegacy}
           </Button>
         </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-700">
+          <p className="font-semibold text-slate-900">Prerequisiti run AI (live)</p>
+          <p className="mt-1">
+            `keyword_three_layer_enabled`: <span className="font-mono">{String(threeLayerEnabled)}</span> ·{" "}
+            `keyword_ai_context_builder_enabled`: <span className="font-mono">{String(contextBuilderEnabled)}</span> ·{" "}
+            `keyword_ai_refinement_enabled`: <span className="font-mono">{String(refinementEnabled)}</span>
+          </p>
+          <p className="mt-1">
+            Se uno dei flag e' `false`, la pipeline puo' andare in fallback/legacy. In Railway imposta:
+            `ENABLE_KEYWORD_THREE_LAYER=true`, `ENABLE_KEYWORD_AI_CONTEXT_BUILDER=true`, opzionale
+            `ENABLE_KEYWORD_AI_REFINEMENT=true`, e `OPENAI_API_KEY`.
+          </p>
+        </div>
         {hasUploadedFile && heliumRows.length === 0 ? (
           <p className="text-xs text-amber-700">
             File caricato senza righe keyword reidratate: esegui Sostituisci file per forzare parsing fresco ed evitare analisi stale.
