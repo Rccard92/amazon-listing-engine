@@ -343,6 +343,7 @@ export const it = {
         wrongProductType: "wrong product type",
         unsupportedFeature: "unsupported feature",
         tooAmbiguous: "too risky / too ambiguous",
+        forbiddenConcept: "concetto vietato",
         irrelevantIntent: "intento non rilevante",
         generic: "esclusa dal motore regole",
       },

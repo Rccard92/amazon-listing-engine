@@ -16,6 +16,7 @@ function mapReasonLabel(item: KeywordClassificationItem): string {
   if (item.excluded_reason_type === "wrong_product_type") return k.decisions.reasons.wrongProductType;
   if (item.excluded_reason_type === "unsupported_feature") return k.decisions.reasons.unsupportedFeature;
   if (item.excluded_reason_type === "too_ambiguous") return k.decisions.reasons.tooAmbiguous;
+  if (item.excluded_reason_type === "forbidden_concept") return k.decisions.reasons.forbiddenConcept;
   if (item.excluded_reason_type === "irrelevant_intent") return k.decisions.reasons.irrelevantIntent;
   if (item.excluded_reason_type === "off_target") return k.decisions.reasons.offTarget;
   if (item.category === "BRANDED_COMPETITOR") return k.decisions.reasons.competitorBrand;

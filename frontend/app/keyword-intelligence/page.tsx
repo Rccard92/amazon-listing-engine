@@ -28,6 +28,9 @@ import { getWorkItemResult, updateWorkItemResult } from "@/lib/work-items";
 const k = it.keywordIntelligence;
 const KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY = "keyword_intelligence_upload_state";
 const KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY = "keyword_intelligence_manual_seeds_text";
+const KEYWORD_INTELLIGENCE_CONTEXT_KEY = "keyword_intelligence_context";
+const KEYWORD_INTELLIGENCE_VETO_SUMMARY_KEY = "keyword_intelligence_veto_summary";
+const KEYWORD_INTELLIGENCE_PIPELINE_VERSION_KEY = "keyword_intelligence_pipeline_version";
 
 type PersistedUploadState = {
   files: KeywordIntelligenceUploadedFile[];
@@ -89,6 +92,10 @@ function KeywordIntelligenceInner() {
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [aiDebugEnabled, setAiDebugEnabled] = useState(false);
+  const [threeLayerEnabled, setThreeLayerEnabled] = useState(false);
+  const [contextBuilderEnabled, setContextBuilderEnabled] = useState(false);
+  const [deterministicVetoEnabled, setDeterministicVetoEnabled] = useState(true);
+  const [refinementEnabled, setRefinementEnabled] = useState(false);
   const [confirmPlanByUser, setConfirmPlanByUser] = useState(false);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
@@ -98,6 +105,10 @@ function KeywordIntelligenceInner() {
       const features = await fetchFeatureFlags();
       if (cancelled || !features) return;
       setAiDebugEnabled(Boolean(features.ai_debug_trace_enabled));
+      setThreeLayerEnabled(Boolean(features.keyword_three_layer_enabled));
+      setContextBuilderEnabled(Boolean(features.keyword_ai_context_builder_enabled));
+      setDeterministicVetoEnabled(features.keyword_deterministic_veto_enabled !== false);
+      setRefinementEnabled(Boolean(features.keyword_ai_refinement_enabled));
     }
     void loadFeatures();
     return () => {
@@ -198,6 +209,10 @@ function KeywordIntelligenceInner() {
       clarification_answers: clarificationAnswers,
       confirm_plan_by_user: confirmPlanByUser,
       include_debug_trace: aiDebugEnabled,
+      pipeline_mode: threeLayerEnabled ? "three_layer" : "legacy",
+      enable_ai_context_builder: contextBuilderEnabled,
+      enable_deterministic_veto: deterministicVetoEnabled,
+      enable_ai_refinement: refinementEnabled,
     });
     setBusy(false);
     if (!response.ok) {
@@ -226,6 +241,9 @@ function KeywordIntelligenceInner() {
       [KEYWORD_CLARIFICATIONS_KEY]: analysis.clarification_questions,
       [CONFIRMED_KEYWORD_PLAN_KEY]: { ...analysis.confirmed_keyword_plan, confirmed_by_user: confirmPlanByUser },
       keyword_intelligence_rules_applied: analysis.rules_applied ?? analysis.confirmed_keyword_plan.rules_version,
+      [KEYWORD_INTELLIGENCE_CONTEXT_KEY]: analysis.keyword_context ?? null,
+      [KEYWORD_INTELLIGENCE_VETO_SUMMARY_KEY]: analysis.veto_summary ?? null,
+      [KEYWORD_INTELLIGENCE_PIPELINE_VERSION_KEY]: analysis.pipeline_applied ?? "legacy",
       [KEYWORD_INTELLIGENCE_UPLOAD_STATE_KEY]: uploadState,
       [KEYWORD_INTELLIGENCE_MANUAL_SEEDS_TEXT_KEY]: manualSeedsText,
     };

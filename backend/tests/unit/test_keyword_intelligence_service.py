@@ -137,3 +137,33 @@ def test_keyword_intelligence_keeps_excluded_and_verify_out_of_accepted_groups()
     )
     assert all(keyword not in blocked for keyword in out.confirmed_keyword_plan.parole_da_spingere_nel_frontend)
     assert all(keyword not in blocked for keyword in out.confirmed_keyword_plan.parole_da_tenere_per_backend)
+
+
+def test_keyword_intelligence_three_layer_pipeline_metadata(monkeypatch) -> None:
+    monkeypatch.setenv("ENABLE_KEYWORD_THREE_LAYER", "true")
+    monkeypatch.setenv("ENABLE_KEYWORD_AI_CONTEXT_BUILDER", "false")
+    monkeypatch.setenv("ENABLE_KEYWORD_AI_REFINEMENT", "false")
+    from app.core import config
+
+    config.get_settings.cache_clear()
+    service = KeywordIntelligenceService()
+    brief = ProductBrief(
+        nome_prodotto="Tagliere bamboo",
+        categoria="Cucina",
+        keyword_primarie=["tagliere bamboo"],
+    )
+    req = KeywordIntelligenceRequest(
+        helium10_rows=[
+            {"keyword": "tagliere bamboo cucina"},
+            {"keyword": "nike tagliere bamboo"},
+            {"keyword": "ricambio tagliere bamboo"},
+        ],
+        pipeline_mode="three_layer",
+        enable_deterministic_veto=True,
+    )
+    out = service.run(brief=brief, enrichment=None, request=req)
+    assert out.pipeline_applied == "three_layer"
+    assert out.keyword_context is not None
+    assert out.veto_summary is not None
+    assert out.confirmed_keyword_plan.pipeline_metadata is not None
+    assert out.confirmed_keyword_plan.pipeline_metadata["deterministic_veto"] is True

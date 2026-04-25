@@ -113,6 +113,26 @@ class Settings(BaseSettings):
         default="",
         description="Path a KEYWORD_INTELLIGENCE_RULES.md (assoluto o relativo alla root backend).",
     )
+    enable_keyword_three_layer: bool = Field(
+        default=False,
+        description="Abilita pipeline keyword intelligence a 3 layer (context builder + veto + refinement).",
+    )
+    enable_keyword_ai_context_builder: bool = Field(
+        default=False,
+        description="Abilita AI Context Builder per keyword intelligence.",
+    )
+    enable_keyword_deterministic_veto: bool = Field(
+        default=True,
+        description="Abilita deterministic veto come gate hard sulle keyword.",
+    )
+    enable_keyword_ai_refinement: bool = Field(
+        default=False,
+        description="Abilita AI refinement post-veto.",
+    )
+    enable_keyword_refinement_shadow_mode: bool = Field(
+        default=True,
+        description="Calcola refinement in shadow mode senza alterare output finale.",
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property

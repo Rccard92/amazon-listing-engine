@@ -39,6 +39,10 @@ export type HealthLive = {
 
 export type FeatureFlags = {
   ai_debug_trace_enabled: boolean;
+  keyword_three_layer_enabled?: boolean;
+  keyword_ai_context_builder_enabled?: boolean;
+  keyword_deterministic_veto_enabled?: boolean;
+  keyword_ai_refinement_enabled?: boolean;
 };
 
 export async function fetchHealthLive(): Promise<HealthLive | null> {

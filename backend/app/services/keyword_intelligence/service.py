@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app.core.config import get_settings
 from app.core.keyword_intelligence_rules import get_keyword_intelligence_rules_bundle
 from app.schemas.keyword_intelligence import (
     ClarificationQuestion,
@@ -19,7 +20,10 @@ from app.schemas.keyword_intelligence import (
 from app.schemas.product_brief import ProductBrief
 from app.schemas.strategic_enrichment import StrategicEnrichment
 from app.services.debug_trace import DebugTraceCollector
+from app.services.keyword_intelligence.context_builder import KeywordContextBuilderService
+from app.services.keyword_intelligence.refinement_service import KeywordRefinementService
 from app.services.keyword_intelligence.rules_engine import KeywordRulesEngine
+from app.services.keyword_intelligence.veto_engine import KeywordDeterministicVetoEngine
 
 
 def _norm(text: str) -> str:
@@ -72,6 +76,9 @@ class KeywordIntelligenceService:
             rules_version=bundle.rules_version,
             rules_text=bundle.rules_text,
         )
+        self._context_builder = KeywordContextBuilderService()
+        self._veto_engine = KeywordDeterministicVetoEngine()
+        self._refinement_service = KeywordRefinementService()
 
     def run(
         self,
@@ -92,10 +99,77 @@ class KeywordIntelligenceService:
     ) -> KeywordIntelligenceResponse:
         trace = DebugTraceCollector(step="keyword_intelligence", enabled=include_debug_trace)
         ctx = _Context(brief=brief, enrichment=enrichment, request=request)
+        settings = get_settings()
+        pipeline_applied = (
+            "three_layer"
+            if settings.enable_keyword_three_layer and request.pipeline_mode == "three_layer"
+            else "legacy"
+        )
+        use_context_builder = bool(
+            pipeline_applied == "three_layer"
+            and settings.enable_keyword_ai_context_builder
+            and request.enable_ai_context_builder
+        )
+        use_veto = bool(
+            pipeline_applied == "three_layer"
+            and settings.enable_keyword_deterministic_veto
+            and request.enable_deterministic_veto
+        )
+        use_refinement = bool(
+            pipeline_applied == "three_layer"
+            and settings.enable_keyword_ai_refinement
+            and request.enable_ai_refinement
+        )
+
+        keyword_context = self._context_builder.build(
+            brief=brief,
+            enrichment=enrichment,
+            request=request,
+            enable_ai=use_context_builder,
+        )
         profile = self.build_product_intelligence_profile(ctx)
         classifications = self.classify_keywords(ctx, profile)
+        veto_summary: dict[str, int] | None = None
+        refinement_summary: dict[str, int] | None = None
+        if use_veto:
+            classifications, veto_summary = self._veto_engine.apply(items=classifications, context=keyword_context)
+        if use_refinement:
+            refined_classifications, refinement_summary = self._refinement_service.refine(
+                items=classifications,
+                context=keyword_context,
+                enable_ai=True,
+            )
+            if not settings.enable_keyword_refinement_shadow_mode:
+                classifications = refined_classifications
         clarifications = self.build_clarification_questions(ctx, profile, classifications)
+        if keyword_context.clarification_questions:
+            for item in keyword_context.clarification_questions:
+                question = str(item.get("question") or "").strip()
+                reason = str(item.get("reason") or "").strip() or "Richiede conferma per migliorare screening."
+                qid = str(item.get("id") or f"context_q_{len(clarifications) + 1}")
+                if question and all(existing.id != qid for existing in clarifications):
+                    clarifications.append(
+                        ClarificationQuestion(
+                            id=qid,
+                            question=question,
+                            reason=reason,
+                            priority="medium",
+                            answer=ctx.request.clarification_answers.get(qid),
+                        )
+                    )
         plan = self.build_keyword_plan(ctx, profile, classifications)
+        plan.pipeline_metadata = {
+            "pipeline_mode": pipeline_applied,
+            "context_builder": use_context_builder,
+            "deterministic_veto": use_veto,
+            "ai_refinement": use_refinement,
+        }
+        if use_veto:
+            plan.vetoed_keywords = [
+                item
+                for item in classifications
+                if item.category in ("OFF_TARGET", "NEGATIVE_KEYWORD", "BRANDED_COMPETITOR", "VERIFY_PRODUCT_FEATURE")
+            ][:80]
         if include_debug_trace:
             accepted = [c.keyword for c in classifications if c.category in ("PRIMARY_SEO", "SECONDARY_SEO", "FEATURE_KEYWORD")]
             excluded = [c.keyword for c in classifications if c.category in ("NEGATIVE_KEYWORD", "OFF_TARGET")]
@@ -110,6 +184,10 @@ class KeywordIntelligenceService:
                 "normalized_columns": ["keyword", "search_volume", "cpr", "source_row"],
                 "product_intelligence_profile": profile.model_dump(mode="json"),
                 "rules_version": self._rules_version,
+                "pipeline_applied": pipeline_applied,
+                "keyword_context": keyword_context.model_dump(mode="json"),
+                "veto_summary": veto_summary,
+                "refinement_summary": refinement_summary,
             }
             trace.add_decision(label="Keyword accettate", reason=f"Accettate {len(accepted)} keyword coerenti con profilo prodotto.")
             trace.add_decision(label="Keyword escluse", reason=f"Escluse {len(excluded)} keyword off-target/negative.")
@@ -139,6 +217,11 @@ class KeywordIntelligenceService:
             clarification_questions=clarifications,
             confirmed_keyword_plan=plan,
             rules_applied=self._rules_version,
+            pipeline_applied=pipeline_applied,
+            context_profile_version=keyword_context.schema_version,
+            keyword_context=keyword_context if pipeline_applied == "three_layer" else None,
+            veto_summary=veto_summary,
+            refinement_summary=refinement_summary,
             debug_trace=trace.build(),
         )
 

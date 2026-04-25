@@ -86,7 +86,9 @@ export type ExcludedReasonType =
   | "irrelevant_intent"
   | "wrong_product_type"
   | "unsupported_feature"
-  | "too_ambiguous";
+  | "too_ambiguous"
+  | "forbidden_concept";
+export type KeywordPipelineMode = "legacy" | "three_layer";
 
 export type ProductAttributeSignal = {
   name: string;
@@ -105,6 +107,21 @@ export type ProductIntelligenceProfile = {
   uncertain_attributes: string[];
   keyword_seed_pool: string[];
   confidence_score: number;
+};
+export type ProductKeywordContext = {
+  schema_version: string;
+  product_type: string;
+  marketplace_category: string;
+  brand: string;
+  confirmed_attributes: ProductAttributeSignal[];
+  uncertain_attributes: ProductAttributeSignal[];
+  excluded_attributes: ProductAttributeSignal[];
+  allowed_keyword_concepts: string[];
+  forbidden_keyword_concepts: string[];
+  possible_competitor_brands: string[];
+  clarification_questions: Array<{ id: string; question: string; reason: string }>;
+  confidence_score: number;
+  reasoning_summary: string;
 };
 
 export type KeywordClassificationItem = {
@@ -138,6 +155,8 @@ export type ConfirmedKeywordPlan = {
   note_su_keyword_da_non_forzare: string[];
   classificazioni_confermate: KeywordClassificationItem[];
   confirmed_by_user: boolean;
+  pipeline_metadata?: Record<string, string | number | boolean> | null;
+  vetoed_keywords?: KeywordClassificationItem[];
 };
 
 export type Helium10KeywordRow = {
@@ -159,6 +178,10 @@ export type KeywordIntelligenceRequest = {
   clarification_answers: Record<string, string>;
   confirm_plan_by_user?: boolean;
   include_debug_trace?: boolean;
+  pipeline_mode?: KeywordPipelineMode;
+  enable_ai_context_builder?: boolean;
+  enable_deterministic_veto?: boolean;
+  enable_ai_refinement?: boolean;
 };
 
 export type KeywordIntelligenceResponse = {
@@ -167,6 +190,11 @@ export type KeywordIntelligenceResponse = {
   clarification_questions: ClarificationQuestion[];
   confirmed_keyword_plan: ConfirmedKeywordPlan;
   rules_applied: string;
+  pipeline_applied?: KeywordPipelineMode;
+  context_profile_version?: string | null;
+  keyword_context?: ProductKeywordContext | null;
+  veto_summary?: Record<string, number> | null;
+  refinement_summary?: Record<string, number> | null;
   debug_trace?: AiDebugTrace | null;
 };
 

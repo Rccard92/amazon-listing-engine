@@ -24,6 +24,7 @@ KeywordCategory = Literal[
 
 KeywordPriority = Literal["high", "medium", "low"]
 KeywordUsage = Literal["title", "bullets_description", "backend_search_terms", "exclude", "verify"]
+KeywordPipelineMode = Literal["legacy", "three_layer"]
 ExcludedReasonType = Literal[
     "off_target",
     "competitor_brand",
@@ -32,6 +33,7 @@ ExcludedReasonType = Literal[
     "wrong_product_type",
     "unsupported_feature",
     "too_ambiguous",
+    "forbidden_concept",
 ]
 
 
@@ -52,6 +54,29 @@ class ProductAttributeSignal(BaseModel):
     value: str
     confidence: float = 0.0
     source: str = "derived"
+
+
+class ProductKeywordContext(BaseModel):
+    schema_version: str = "v1"
+    product_type: str = ""
+    marketplace_category: str = ""
+    brand: str = ""
+    confirmed_attributes: list[ProductAttributeSignal] = Field(default_factory=list)
+    uncertain_attributes: list[ProductAttributeSignal] = Field(default_factory=list)
+    excluded_attributes: list[ProductAttributeSignal] = Field(default_factory=list)
+    allowed_keyword_concepts: list[str] = Field(default_factory=list)
+    forbidden_keyword_concepts: list[str] = Field(default_factory=list)
+    possible_competitor_brands: list[str] = Field(default_factory=list)
+    clarification_questions: list[dict[str, str]] = Field(default_factory=list)
+    confidence_score: float = 0.0
+    reasoning_summary: str = ""
+
+
+class KeywordVetoResult(BaseModel):
+    allowed_keywords: list[str] = Field(default_factory=list)
+    verify_keywords: list[str] = Field(default_factory=list)
+    excluded_keywords: list[str] = Field(default_factory=list)
+    summary: dict[str, int] = Field(default_factory=dict)
 
 
 class ProductIntelligenceProfile(BaseModel):
@@ -97,6 +122,8 @@ class ConfirmedKeywordPlan(BaseModel):
     note_su_keyword_da_non_forzare: list[str] = Field(default_factory=list)
     classificazioni_confermate: list[KeywordClassificationItem] = Field(default_factory=list)
     confirmed_by_user: bool = False
+    pipeline_metadata: dict[str, str | int | bool] | None = None
+    vetoed_keywords: list[KeywordClassificationItem] = Field(default_factory=list)
 
 
 class KeywordIntelligenceRequest(BaseModel):
@@ -106,6 +133,10 @@ class KeywordIntelligenceRequest(BaseModel):
     clarification_answers: dict[str, str] = Field(default_factory=dict)
     confirm_plan_by_user: bool = False
     include_debug_trace: bool = False
+    pipeline_mode: KeywordPipelineMode = "legacy"
+    enable_ai_context_builder: bool = False
+    enable_deterministic_veto: bool = True
+    enable_ai_refinement: bool = False
 
 
 class KeywordIntelligenceResponse(BaseModel):
@@ -114,4 +145,9 @@ class KeywordIntelligenceResponse(BaseModel):
     clarification_questions: list[ClarificationQuestion] = Field(default_factory=list)
     confirmed_keyword_plan: ConfirmedKeywordPlan
     rules_applied: str = "keyword_intelligence_rules_v1"
+    pipeline_applied: KeywordPipelineMode = "legacy"
+    context_profile_version: str | None = None
+    keyword_context: ProductKeywordContext | None = None
+    veto_summary: dict[str, int] | None = None
+    refinement_summary: dict[str, int] | None = None
     debug_trace: DebugTrace | None = None
