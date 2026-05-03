@@ -11,13 +11,14 @@ import { cn } from "@/lib/utils";
 import {
   emptyStrategy,
   getConfirmedStrategyFromWorkItem,
+  hasListingKeywordAnchor,
   type ListingSectionResult,
   type ListingSectionType,
   type ValidationReport,
 } from "@/lib/listing-generation";
 import type { ConfirmedProductStrategy } from "@/lib/listing-generation";
 import { it } from "@/lib/i18n/it";
-import { getWorkItem, updateWorkItem } from "@/lib/work-items";
+import { getWorkItem, updateWorkItem, type WorkItemStatus } from "@/lib/work-items";
 
 const p = it.listingGeneration;
 const BULLETS_COUNT = 5;
@@ -102,6 +103,7 @@ function ListingGenerazioneContent() {
   const [valDesc, setValDesc] = useState<ValidationReport | null>(null);
   const [valKw, setValKw] = useState<ValidationReport | null>(null);
   const [aiDebugEnabled, setAiDebugEnabled] = useState(false);
+  const [workItemStatus, setWorkItemStatus] = useState<WorkItemStatus | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +132,7 @@ function ListingGenerazioneContent() {
       setLoadError(null);
       const item = await getWorkItem(workItemId);
       if (cancelled || !item) return;
+      setWorkItemStatus(item.status);
       const storedMap = getSectionsFromWorkItem(item.generated_output as Record<string, unknown>);
       const stSeo = storedMap.seo_title as { seo_title?: string | null; validation?: ValidationReport | null } | undefined;
       if (stSeo?.seo_title) setSeoText(stSeo.seo_title);
@@ -200,13 +203,18 @@ function ListingGenerazioneContent() {
           updated_at: now,
         };
       }
-      await updateWorkItem(workItemId, {
+      const patch: Parameters<typeof updateWorkItem>[1] = {
         generated_output: {
           ...prev,
           listing_generation: { ...lg, sections },
         },
-      });
+      };
+      if (item.status !== "completed") {
+        patch.status = "in_progress";
+      }
+      await updateWorkItem(workItemId, patch);
       setSaving(false);
+      if (patch.status) setWorkItemStatus(patch.status);
       setSaveHint(p.actions.savedOutput);
     },
     [workItemId],
@@ -241,11 +249,46 @@ function ListingGenerazioneContent() {
     } else {
       sections.keyword_strategy = { backend_search_terms: kwText, updated_at: now, validation: valKw };
     }
+    const patch: Parameters<typeof updateWorkItem>[1] = {
+      generated_output: { ...prev, listing_generation: { ...lg, sections } },
+    };
+    if (item.status !== "completed") {
+      patch.status = "in_progress";
+    }
+    await updateWorkItem(workItemId, patch);
+    setSaving(false);
+    if (patch.status) setWorkItemStatus(patch.status);
+    setSaveHint(p.actions.savedOutput);
+    return true;
+  }
+
+  async function saveProjectCompleted(): Promise<boolean> {
+    if (!workItemId) return false;
+    setSaving(true);
+    setSaveHint(null);
+    const item = await getWorkItem(workItemId);
+    if (!item) {
+      setSaving(false);
+      return false;
+    }
+    const prev = (item.generated_output || {}) as Record<string, unknown>;
+    const lg =
+      typeof prev.listing_generation === "object" && prev.listing_generation && !Array.isArray(prev.listing_generation)
+        ? (prev.listing_generation as { sections?: Record<string, SectionStored> })
+        : {};
+    const sections = { ...(lg.sections || {}) };
+    const now = new Date().toISOString();
+    sections.seo_title = { seo_title: seoText, updated_at: now, validation: valSeo };
+    sections.bullet_points = { bullets: normalizeBullets(bullets), updated_at: now, validation: valBullets };
+    sections.description = { description: descText, updated_at: now, validation: valDesc };
+    sections.keyword_strategy = { backend_search_terms: kwText, updated_at: now, validation: valKw };
     await updateWorkItem(workItemId, {
       generated_output: { ...prev, listing_generation: { ...lg, sections } },
+      status: "completed",
     });
+    setWorkItemStatus("completed");
     setSaving(false);
-    setSaveHint(p.actions.savedOutput);
+    setSaveHint(p.actions.savedProject);
     return true;
   }
 
@@ -314,6 +357,7 @@ function ListingGenerazioneContent() {
         {workItemId ? (
           <p className="mt-3 text-xs font-medium text-slate-500">
             {p.workItemHint} · ID: {workItemId}
+            {workItemStatus === "completed" ? ` · ${p.projectStatusCompletedHint}` : null}
           </p>
         ) : null}
         {loadError ? <p className="mt-3 text-sm text-amber-800">{loadError}</p> : null}
@@ -338,8 +382,8 @@ function ListingGenerazioneContent() {
                 <li className={strategy.nome_prodotto.trim() ? "text-emerald-800" : "text-amber-800"}>
                   {strategy.nome_prodotto.trim() ? `✓ ${p.readinessNomeOk}` : `· ${p.readinessNomeKo}`}
                 </li>
-                <li className={strategy.keyword_primarie.length ? "text-emerald-800" : "text-amber-800"}>
-                  {strategy.keyword_primarie.length ? `✓ ${p.readinessKwOk}` : `· ${p.readinessKwKo}`}
+                <li className={hasListingKeywordAnchor(strategy) ? "text-emerald-800" : "text-amber-800"}>
+                  {hasListingKeywordAnchor(strategy) ? `✓ ${p.readinessKwOk}` : `· ${p.readinessKwKo}`}
                 </li>
                 <li
                   className={
@@ -403,6 +447,15 @@ function ListingGenerazioneContent() {
             </Button>
             <Button type="button" variant="secondary" size="sm" disabled={saving} onClick={() => void saveCurrentDraft()}>
               {p.actions.saveOutput}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={saving}
+              className="rounded-xl bg-emerald-700 px-4 text-white shadow-sm hover:bg-emerald-800"
+              onClick={() => void saveProjectCompleted()}
+            >
+              {p.actions.saveProject}
             </Button>
             {saveHint ? <span className="text-xs text-slate-500">{saveHint}</span> : null}
           </div>

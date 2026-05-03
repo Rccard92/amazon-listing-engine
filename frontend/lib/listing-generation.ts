@@ -157,7 +157,83 @@ export type ConfirmedKeywordPlan = {
   confirmed_by_user: boolean;
   pipeline_metadata?: Record<string, string | number | boolean> | null;
   vetoed_keywords?: KeywordClassificationItem[];
+  /** Canonico per generazione (senza escluse). */
+  included_keywords?: string[];
+  /** Canonico: vietate ovunque nell'output. */
+  excluded_keywords?: string[];
 };
+
+function _normKeywordToken(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Deriva included/excluded da campi legacy se mancanti (dati salvati prima della migrazione). */
+export function enrichConfirmedPlanCanonical(plan: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
+  const vetoed = plan.vetoed_keywords ?? [];
+  const excludedItems = [...plan.keyword_escluse_definitivamente, ...vetoed];
+  const seenEx = new Set<string>();
+  const excluded_keywords: string[] = [];
+  for (const item of excludedItems) {
+    const n = _normKeywordToken(item.keyword);
+    if (!n || seenEx.has(n)) continue;
+    seenEx.add(n);
+    excluded_keywords.push(item.keyword.trim());
+  }
+  for (const k of plan.excluded_keywords ?? []) {
+    const n = _normKeywordToken(k);
+    if (!n || seenEx.has(n)) continue;
+    seenEx.add(n);
+    excluded_keywords.push(k.trim());
+  }
+
+  let included_keywords = [...(plan.included_keywords ?? [])].filter((k) => _normKeywordToken(k));
+  if (!included_keywords.length) {
+    const pool: string[] = [];
+    const seenIn = new Set<string>();
+    for (const lst of [plan.parole_da_spingere_nel_frontend ?? [], plan.parole_da_tenere_per_backend ?? []]) {
+      for (const kw of lst) {
+        const raw = kw.trim();
+        const n = _normKeywordToken(raw);
+        if (!n || seenEx.has(n) || seenIn.has(n)) continue;
+        seenIn.add(n);
+        pool.push(raw);
+      }
+    }
+    if (!pool.length) {
+      if (plan.keyword_primaria_finale?.trim()) {
+        const raw = plan.keyword_primaria_finale.trim();
+        const n = _normKeywordToken(raw);
+        if (!seenEx.has(n) && n) {
+          pool.push(raw);
+          seenIn.add(n);
+        }
+      }
+      for (const kw of plan.keyword_secondarie_prioritarie ?? []) {
+        const raw = kw.trim();
+        const n = _normKeywordToken(raw);
+        if (!n || seenEx.has(n) || seenIn.has(n)) continue;
+        seenIn.add(n);
+        pool.push(raw);
+      }
+    }
+    included_keywords = pool;
+  }
+
+  return {
+    ...plan,
+    included_keywords,
+    excluded_keywords,
+  };
+}
+
+/** True se c’è almeno una keyword usabile per ancorare la generazione (brief o piano Fase 3). */
+export function hasListingKeywordAnchor(strategy: ConfirmedProductStrategy): boolean {
+  if (strategy.keyword_primarie.length > 0) return true;
+  const ckp = strategy.confirmed_keyword_plan;
+  if (!ckp) return false;
+  const enriched = enrichConfirmedPlanCanonical(ckp);
+  return (enriched.included_keywords?.length ?? 0) > 0;
+}
 
 export type KeywordUserEdits = {
   additions: string[];

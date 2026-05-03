@@ -18,8 +18,10 @@ from app.schemas.listing_generation import (
 )
 from app.services.listing_generation.llm_client import ListingLLMClient
 from app.services.listing_generation.openai_llm_client import OpenAIListingLLMClient
+from app.services.keyword_intelligence.plan_canonical import normalize_confirmed_keyword_plan
 from app.services.listing_generation.post_process.bullets import post_process_bullets
 from app.services.listing_generation.post_process.description import post_process_description
+from app.services.listing_generation.post_process.excluded_keywords import strip_excluded_terms
 from app.services.listing_generation.post_process.keyword_strategy import post_process_backend_search_terms
 from app.services.listing_generation.post_process.title import post_process_seo_title
 from app.services.listing_generation.prompts.bullets import (
@@ -44,6 +46,7 @@ from app.services.listing_generation.validation.description import validate_desc
 from app.services.listing_generation.validation.keyword_strategy import validate_backend_search_terms
 from app.services.listing_generation.validation.title import validate_seo_title
 from app.services.debug_trace import DebugTraceCollector
+from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy
 from app.schemas.debug_trace import DebugTraceValidationCheck
 
 
@@ -125,7 +128,8 @@ class ListingGenerationOrchestratorService:
         settings = get_settings()
         trace_enabled = bool(settings.enable_ai_debug_trace and request.include_debug_trace)
         rules = request.rules or InjectedRules()
-        merged_banned = list(rules.banned_phrases)
+        excluded_terms = self._excluded_phrases(request.strategy)
+        merged_banned = list(rules.banned_phrases) + excluded_terms
         pre = self._preflight(request)
         dogma = get_dogma_bundle_for_settings(settings.dogma_md_path)
         dogma_title = build_system_addon_for_section(dogma, "seo_title")
@@ -134,17 +138,45 @@ class ListingGenerationOrchestratorService:
         dogma_kw = build_system_addon_for_section(dogma, "keyword_strategy")
 
         if request.section == "seo_title":
-            out = self._generate_title(request, settings, rules, merged_banned, dogma_title, trace_enabled=trace_enabled)
+            out = self._generate_title(
+                request,
+                settings,
+                rules,
+                merged_banned,
+                dogma_title,
+                excluded_terms=excluded_terms,
+                trace_enabled=trace_enabled,
+            )
         elif request.section == "bullet_points":
             out = self._generate_bullets(
-                request, settings, rules, merged_banned, dogma_bullets, trace_enabled=trace_enabled
+                request,
+                settings,
+                rules,
+                merged_banned,
+                dogma_bullets,
+                excluded_terms=excluded_terms,
+                trace_enabled=trace_enabled,
             )
         elif request.section == "description":
             out = self._generate_description(
-                request, settings, rules, merged_banned, dogma_desc, trace_enabled=trace_enabled
+                request,
+                settings,
+                rules,
+                merged_banned,
+                dogma_desc,
+                excluded_terms=excluded_terms,
+                trace_enabled=trace_enabled,
             )
         else:
-            out = self._generate_keywords(request, settings, rules, merged_banned, dogma_kw, trace_enabled=trace_enabled)
+            out = self._generate_keywords(
+                request,
+                settings,
+                rules,
+                merged_banned,
+                dogma_kw,
+                excluded_terms=excluded_terms,
+                trace_enabled=trace_enabled,
+            )
         out.validation = merge_validation_reports(pre.validation, out.validation)
         if trace_enabled and out.debug_trace is not None and pre.validation.issues:
             for issue in pre.validation.issues:
@@ -153,16 +185,33 @@ class ListingGenerationOrchestratorService:
                 )
         return out
 
+    @staticmethod
+    def _excluded_phrases(strategy: ConfirmedProductStrategy) -> list[str]:
+        ckp = strategy.confirmed_keyword_plan
+        if ckp is None:
+            return []
+        normalized = normalize_confirmed_keyword_plan(ckp)
+        return [str(k).strip() for k in normalized.excluded_keywords if str(k).strip()]
+
+    @staticmethod
+    def _has_anchor_keywords(strategy: ConfirmedProductStrategy) -> bool:
+        if strategy.keyword_primarie:
+            return True
+        ckp = strategy.confirmed_keyword_plan
+        if ckp is None:
+            return False
+        return bool(normalize_confirmed_keyword_plan(ckp).included_keywords)
+
     def _preflight(self, request: GenerateListingSectionRequest) -> ListingSectionResult:
         """Warning non bloccanti prima del LLM."""
         issues: list[ValidationIssue] = []
         s = request.strategy
-        if request.section in ("seo_title", "keyword_strategy") and not s.keyword_primarie:
+        if request.section in ("seo_title", "keyword_strategy") and not self._has_anchor_keywords(s):
             issues.append(
                 ValidationIssue(
                     code="missing_primary_keywords",
                     severity="warning",
-                    message_it="Nessuna keyword primaria in strategia: risultato SEO meno ancorato.",
+                    message_it="Nessuna keyword inclusa nel piano: risultato SEO meno ancorato.",
                     field="keyword_primarie",
                 )
             )
@@ -181,7 +230,15 @@ class ListingGenerationOrchestratorService:
         return ListingSectionResult(section=request.section, validation=ValidationReport(issues=issues))
 
     def _generate_title(
-        self, request, settings, rules: InjectedRules, merged_banned: list[str], dogma_addon: str, *, trace_enabled: bool
+        self,
+        request,
+        settings,
+        rules: InjectedRules,
+        merged_banned: list[str],
+        dogma_addon: str,
+        *,
+        excluded_terms: list[str],
+        trace_enabled: bool,
     ) -> ListingSectionResult:
         trace = DebugTraceCollector(step="title_generation", enabled=trace_enabled)
         max_chars = rules.seo_title_max_chars or settings.listing_seo_title_max_chars
@@ -202,6 +259,8 @@ class ListingGenerationOrchestratorService:
             trace.add_decision(label="Strategia titolo", reason="Priorita a keyword primaria con leggibilita naturale.")
         raw = self.llm.generate_text(system_prompt=system, user_prompt=user, max_output_tokens=400)
         title, applied = post_process_seo_title(raw, max_chars=max_chars)
+        title, strip_applied = strip_excluded_terms(title, excluded_terms)
+        applied = [*applied, *strip_applied]
         report = validate_seo_title(title, max_chars=max_chars, rules=rules_eff)
         if trace_enabled:
             trace.final_output = {"seo_title": title}
@@ -223,7 +282,15 @@ class ListingGenerationOrchestratorService:
         return out
 
     def _generate_bullets(
-        self, request, settings, rules: InjectedRules, merged_banned: list[str], dogma_addon: str, *, trace_enabled: bool
+        self,
+        request,
+        settings,
+        rules: InjectedRules,
+        merged_banned: list[str],
+        dogma_addon: str,
+        *,
+        excluded_terms: list[str],
+        trace_enabled: bool,
     ) -> ListingSectionResult:
         trace = DebugTraceCollector(step="bullet_generation", enabled=trace_enabled)
         rules_eff = rules.model_copy(update={"banned_phrases": merged_banned})
@@ -248,6 +315,12 @@ class ListingGenerationOrchestratorService:
                 details="Risposta modello non parseabile in bullets[]",
             )
         bullets, applied_pp = post_process_bullets(parsed)
+        stripped_bullets: list[str] = []
+        for b in bullets:
+            nb, sa = strip_excluded_terms(b, excluded_terms)
+            stripped_bullets.append(nb)
+            applied_pp.extend(sa)
+        bullets = stripped_bullets
         report = validate_bullets(bullets, rules=rules_eff)
         if trace_enabled:
             trace.intermediate_outputs = {"parsed_bullets_count": len(parsed)}
@@ -271,7 +344,15 @@ class ListingGenerationOrchestratorService:
         )
 
     def _generate_description(
-        self, request, settings, rules: InjectedRules, merged_banned: list[str], dogma_addon: str, *, trace_enabled: bool
+        self,
+        request,
+        settings,
+        rules: InjectedRules,
+        merged_banned: list[str],
+        dogma_addon: str,
+        *,
+        excluded_terms: list[str],
+        trace_enabled: bool,
     ) -> ListingSectionResult:
         trace = DebugTraceCollector(step="description_generation", enabled=trace_enabled)
         min_c = rules.description_min_chars or settings.listing_description_min_chars
@@ -291,6 +372,8 @@ class ListingGenerationOrchestratorService:
             }
         raw = self.llm.generate_text(system_prompt=system, user_prompt=user, max_output_tokens=2500)
         desc, applied = post_process_description(raw)
+        desc, strip_applied = strip_excluded_terms(desc, excluded_terms)
+        applied = [*applied, *strip_applied]
         report = validate_description(desc, min_chars=min_c, max_chars=max_c, rules=rules_eff)
         if trace_enabled:
             trace.final_output = {"description": desc}
@@ -310,7 +393,15 @@ class ListingGenerationOrchestratorService:
         )
 
     def _generate_keywords(
-        self, request, settings, rules: InjectedRules, merged_banned: list[str], dogma_addon: str, *, trace_enabled: bool
+        self,
+        request,
+        settings,
+        rules: InjectedRules,
+        merged_banned: list[str],
+        dogma_addon: str,
+        *,
+        excluded_terms: list[str],
+        trace_enabled: bool,
     ) -> ListingSectionResult:
         trace = DebugTraceCollector(step="backend_keyword_generation", enabled=trace_enabled)
         max_b = rules.backend_search_terms_max_bytes or settings.listing_backend_search_terms_max_bytes
@@ -337,6 +428,8 @@ class ListingGenerationOrchestratorService:
         if request.strategy.nome_prodotto:
             brand_tokens.append(request.strategy.nome_prodotto)
         terms, applied = post_process_backend_search_terms(first_line, max_bytes=max_b, brand_tokens=brand_tokens)
+        terms, strip_applied = strip_excluded_terms(terms, excluded_terms)
+        applied = [*applied, *strip_applied]
         report = validate_backend_search_terms(terms, max_bytes=max_b)
         if trace_enabled:
             trace.final_output = {"backend_search_terms": terms}

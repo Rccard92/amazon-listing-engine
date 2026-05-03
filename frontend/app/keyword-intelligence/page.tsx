@@ -25,6 +25,7 @@ import {
   type KeywordIntelligenceResponse,
   type KeywordIntelligenceUploadedFile,
   type KeywordUserEdits,
+  enrichConfirmedPlanCanonical,
 } from "@/lib/listing-generation";
 import { getWorkItemResult, updateWorkItemResult } from "@/lib/work-items";
 
@@ -71,7 +72,7 @@ const EMPTY_USER_EDITS: KeywordUserEdits = {
 };
 
 function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan {
-  return {
+  const base: ConfirmedKeywordPlan = {
     schema_version: raw.schema_version ?? "v1",
     rules_version: raw.rules_version ?? "keyword_intelligence_rules_v1",
     keyword_primaria_finale: raw.keyword_primaria_finale ?? "",
@@ -82,7 +83,11 @@ function normalizeConfirmedPlan(raw: ConfirmedKeywordPlan): ConfirmedKeywordPlan
     note_su_keyword_da_non_forzare: raw.note_su_keyword_da_non_forzare ?? [],
     classificazioni_confermate: raw.classificazioni_confermate ?? [],
     confirmed_by_user: Boolean(raw.confirmed_by_user),
+    vetoed_keywords: raw.vetoed_keywords ?? [],
+    included_keywords: raw.included_keywords ?? [],
+    excluded_keywords: raw.excluded_keywords ?? [],
   };
+  return enrichConfirmedPlanCanonical(base);
 }
 
 function splitLines(value: string): string[] {
@@ -183,14 +188,40 @@ function applyUserEditsToPlan(basePlan: ConfirmedKeywordPlan, userEdits: Keyword
     }
   }
 
+  const excludedKeywordStrings: string[] = [];
+  const seenExStr = new Set<string>();
+  for (const row of nextExcluded) {
+    const k = row.keyword.trim();
+    const nk = k.toLowerCase();
+    if (!nk || seenExStr.has(nk)) continue;
+    seenExStr.add(nk);
+    excludedKeywordStrings.push(k);
+  }
+
+  const manualFirst = userEdits.additions.map((k) => k.trim()).filter(Boolean);
+  const manualActive = activeKeywords.filter((item) => item.origin === "manual").map((item) => item.keyword.trim());
+  const aiActive = activeKeywords.filter((item) => item.origin !== "manual").map((item) => item.keyword.trim());
+  const includedOrdered: string[] = [];
+  const seenInc = new Set<string>();
+  for (const k of [...manualFirst, ...manualActive, ...aiActive]) {
+    const nk = k.toLowerCase();
+    if (!nk || seenExStr.has(nk) || seenInc.has(nk)) continue;
+    seenInc.add(nk);
+    includedOrdered.push(k);
+  }
+
+  const adjustedPlan: ConfirmedKeywordPlan = {
+    ...basePlan,
+    parole_da_spingere_nel_frontend: frontendKeywords,
+    parole_da_tenere_per_backend: backendKeywords,
+    keyword_secondarie_prioritarie: frontendKeywords.slice(0, 12),
+    keyword_escluse_definitivamente: nextExcluded,
+    included_keywords: includedOrdered,
+    excluded_keywords: excludedKeywordStrings,
+  };
+
   return {
-    adjustedPlan: {
-      ...basePlan,
-      parole_da_spingere_nel_frontend: frontendKeywords,
-      parole_da_tenere_per_backend: backendKeywords,
-      keyword_secondarie_prioritarie: frontendKeywords.slice(0, 12),
-      keyword_escluse_definitivamente: nextExcluded,
-    },
+    adjustedPlan: enrichConfirmedPlanCanonical(adjustedPlan),
     activeKeywords,
     excludedKeywords,
   };

@@ -6,6 +6,7 @@ import re
 
 from app.schemas.keyword_intelligence import ConfirmedKeywordPlan
 from app.schemas.keyword_planning import GeneratedFrontendContent
+from app.services.keyword_intelligence.plan_canonical import normalize_confirmed_keyword_plan
 
 
 def _normalize(text: str) -> str:
@@ -19,19 +20,24 @@ def remaining_backend_opportunities(
 ) -> list[str]:
     if plan is None:
         return []
+    plan = normalize_confirmed_keyword_plan(plan)
     excluded = {
         _normalize(item.keyword)
         for item in plan.keyword_escluse_definitivamente
     }
+    excluded.update(_normalize(k) for k in plan.excluded_keywords if str(k).strip())
     verify = {
         _normalize(item.keyword)
         for item in plan.classificazioni_confermate
         if item.category == "VERIFY_PRODUCT_FEATURE" or item.required_user_confirmation
     }
-    candidates = [
-        *plan.parole_da_tenere_per_backend,
-        *plan.keyword_secondarie_prioritarie,
-    ]
+    if plan.included_keywords:
+        candidates = list(plan.included_keywords)
+    else:
+        candidates = [
+            *plan.parole_da_tenere_per_backend,
+            *plan.keyword_secondarie_prioritarie,
+        ]
     uniq: list[str] = []
     seen: set[str] = set()
     for item in candidates:

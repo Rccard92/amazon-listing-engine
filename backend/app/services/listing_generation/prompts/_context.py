@@ -2,6 +2,7 @@
 
 from app.schemas.confirmed_product_strategy import ConfirmedProductStrategy
 from app.schemas.listing_generation import InjectedRules
+from app.services.keyword_intelligence.plan_canonical import normalize_confirmed_keyword_plan
 
 
 def format_strategy_for_prompt(strategy: ConfirmedProductStrategy) -> str:
@@ -23,23 +24,45 @@ def format_strategy_for_prompt(strategy: ConfirmedProductStrategy) -> str:
         parts.append("Obiezioni da gestire:\n- " + "\n- ".join(strategy.gestione_obiezioni))
     if strategy.insight_recensioni_clienti:
         parts.append(f"Insight recensioni / clienti: {strategy.insight_recensioni_clienti}")
-    if strategy.keyword_primarie:
-        parts.append("Keyword primarie: " + ", ".join(strategy.keyword_primarie))
-    if strategy.keyword_secondarie:
-        parts.append("Keyword secondarie: " + ", ".join(strategy.keyword_secondarie))
+    ckp_norm = None
+    if strategy.confirmed_keyword_plan is not None:
+        ckp_norm = normalize_confirmed_keyword_plan(strategy.confirmed_keyword_plan)
+
+    use_included_block = bool(ckp_norm and ckp_norm.included_keywords)
+    if not use_included_block:
+        if strategy.keyword_primarie:
+            parts.append("Keyword primarie (brief): " + ", ".join(strategy.keyword_primarie))
+        if strategy.keyword_secondarie:
+            parts.append("Keyword secondarie (brief): " + ", ".join(strategy.keyword_secondarie))
+
     if strategy.confirmed_keyword_plan is not None:
         ckp = strategy.confirmed_keyword_plan
-        parts.append(f"Keyword primaria finale (confirmed plan): {ckp.keyword_primaria_finale}")
+        ckp = ckp_norm or normalize_confirmed_keyword_plan(ckp)
+        if ckp.included_keywords:
+            parts.append(
+                "Keyword incluse (da usare nel copy in modo naturale, senza stuffing): "
+                + ", ".join(ckp.included_keywords[:48])
+            )
+        if ckp.excluded_keywords:
+            parts.append(
+                "Keyword escluse (vietate in titolo, bullet, descrizione e backend; non usarle in alcun modo): "
+                + ", ".join(ckp.excluded_keywords[:48])
+            )
         parts.append(f"Versione regole keyword intelligence: {ckp.rules_version}")
-        if ckp.keyword_secondarie_prioritarie:
-            parts.append("Keyword secondarie prioritarie (confirmed plan): " + ", ".join(ckp.keyword_secondarie_prioritarie))
-        if ckp.parole_da_spingere_nel_frontend:
-            parts.append("Parole da spingere nel frontend (confirmed plan): " + ", ".join(ckp.parole_da_spingere_nel_frontend))
-        if ckp.parole_da_tenere_per_backend:
-            parts.append("Parole da tenere per backend (confirmed plan): " + ", ".join(ckp.parole_da_tenere_per_backend))
+        if not ckp.included_keywords:
+            if ckp.keyword_primaria_finale.strip():
+                parts.append(f"Keyword primaria finale (piano legacy): {ckp.keyword_primaria_finale}")
+            if ckp.keyword_secondarie_prioritarie:
+                parts.append(
+                    "Keyword secondarie prioritarie (piano legacy): " + ", ".join(ckp.keyword_secondarie_prioritarie)
+                )
+            if ckp.parole_da_spingere_nel_frontend:
+                parts.append("Parole da spingere nel frontend (piano legacy): " + ", ".join(ckp.parole_da_spingere_nel_frontend))
+            if ckp.parole_da_tenere_per_backend:
+                parts.append("Parole da tenere per backend (piano legacy): " + ", ".join(ckp.parole_da_tenere_per_backend))
         excluded_keywords = [item.keyword for item in ckp.keyword_escluse_definitivamente]
-        if excluded_keywords:
-            parts.append("Keyword escluse (confirmed plan): " + ", ".join(excluded_keywords[:24]))
+        if excluded_keywords and not ckp.excluded_keywords:
+            parts.append("Keyword escluse (dettaglio classificazione): " + ", ".join(excluded_keywords[:24]))
         verify_keywords = [
             item.keyword
             for item in ckp.classificazioni_confermate

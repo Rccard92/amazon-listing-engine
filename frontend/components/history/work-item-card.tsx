@@ -21,7 +21,7 @@ function workflowLabel(type: WorkItem["workflow_type"]): string {
 }
 
 function statusLabel(status: WorkItem["status"]): string {
-  if (status === "completed") return "Completato";
+  if (status === "completed") return "Progetto confermato";
   if (status === "in_progress") return "In corso";
   return "Bozza";
 }
@@ -32,7 +32,9 @@ export function WorkItemCard({ item, onOpen, onDuplicate, onDelete, onMoveToProj
       <CardHeader className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">{item.title}</CardTitle>
-          <Badge variant="info">{statusLabel(item.status)}</Badge>
+          <Badge variant={item.status === "completed" ? "success" : item.status === "in_progress" ? "info" : "neutral"}>
+            {statusLabel(item.status)}
+          </Badge>
         </div>
         <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{workflowLabel(item.workflow_type)}</p>
       </CardHeader>

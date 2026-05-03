@@ -12,6 +12,7 @@ from app.schemas.product_brief import ProductBrief
 from app.schemas.strategic_enrichment import StrategicEnrichment
 from app.schemas.keyword_intelligence import ConfirmedKeywordPlan
 from app.schemas.keyword_planning import KeywordPlanning
+from app.services.keyword_intelligence.plan_canonical import normalize_confirmed_keyword_plan
 from app.services.manual_workflow.assemble_strategy import assemble_confirmed_strategy
 
 # Chiave in `WorkItem.input_data` per strategia strutturata salvata dal form manuale (MVP manuale-first).
@@ -152,8 +153,17 @@ def confirmed_strategy_from_work_item_input(input_data: dict) -> ConfirmedProduc
             ckp = ConfirmedKeywordPlan.model_validate(ckp_raw)
         assembled = assemble_confirmed_strategy(brief, enr)
         if ckp is not None:
-            primarie = [ckp.keyword_primaria_finale] if ckp.keyword_primaria_finale.strip() else assembled.keyword_primarie
-            secondarie = ckp.keyword_secondarie_prioritarie or assembled.keyword_secondarie
+            ckp = normalize_confirmed_keyword_plan(ckp)
+            inc = [k for k in ckp.included_keywords if str(k).strip()]
+            if inc:
+                primarie = [inc[0]]
+                secondarie = inc[1:] if len(inc) > 1 else []
+            elif ckp.keyword_primaria_finale.strip():
+                primarie = [ckp.keyword_primaria_finale.strip()]
+                secondarie = list(ckp.keyword_secondarie_prioritarie or assembled.keyword_secondarie)
+            else:
+                primarie = assembled.keyword_primarie
+                secondarie = ckp.keyword_secondarie_prioritarie or assembled.keyword_secondarie
             assembled = assembled.model_copy(update={"keyword_primarie": primarie, "keyword_secondarie": secondarie})
         return assembled.model_copy(update={"confirmed_keyword_plan": ckp, "keyword_planning": kwp})
 

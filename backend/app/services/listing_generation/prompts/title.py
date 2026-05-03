@@ -14,7 +14,7 @@ def build_title_system_prompt(*, dogma_addon: str = "") -> str:
     return (
         "Sei un copywriter Amazon senior per il mercato italiano. "
         "Generi UN SOLO titolo prodotto per massimizzare chiarezza, CTR e coerenza SEO. "
-        "Regole: inserisci le keyword primarie in modo naturale (max 1-2 secondarie se servono); "
+        "Regole: inserisci le keyword incluse nel brief in modo naturale (al massimo una o due aggiuntive se servono); "
         "niente keyword stuffing ripetuto; niente MAIUSCOLE grida o emoji; niente promesse illegali o fuori dai dati. "
         "Output: una sola riga di testo, senza virgolette, senza prefissi."
         f"{dogma_addon}"

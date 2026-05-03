@@ -1,6 +1,7 @@
 "use client";
 
 import type { ConfirmedProductStrategy, PriceTier } from "@/lib/listing-generation";
+import { enrichConfirmedPlanCanonical } from "@/lib/listing-generation";
 import { it } from "@/lib/i18n/it";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,11 @@ function splitLines(s: string): string[] {
 }
 
 export function StrategySummaryPanel({ strategy, onChange }: Props) {
+  const planIncluded =
+    strategy.confirmed_keyword_plan != null
+      ? enrichConfirmedPlanCanonical(strategy.confirmed_keyword_plan).included_keywords ?? []
+      : [];
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <FormField label={p.fields.nome} required>
@@ -35,6 +41,12 @@ export function StrategySummaryPanel({ strategy, onChange }: Props) {
           onChange={(e) => onChange({ ...strategy, categoria: e.target.value || null })}
         />
       </FormField>
+      {planIncluded.length ? (
+        <FormField className="md:col-span-2" label={p.fields.keywordsFromPlan} optional>
+          <p className="text-sm leading-relaxed text-slate-700">{planIncluded.join(", ")}</p>
+          <p className="mt-1 text-xs text-slate-500">{p.fields.keywordsFromPlanHint}</p>
+        </FormField>
+      ) : null}
       <FormField className="md:col-span-2" label={p.fields.keywordsPrimary} optional>
         <Input
           placeholder="es. lampada led, luce scrivania"

@@ -10,6 +10,7 @@ from app.schemas.keyword_intelligence import (
     KeywordClassificationItem,
     ProductIntelligenceProfile,
 )
+from app.services.keyword_intelligence.plan_canonical import normalize_confirmed_keyword_plan
 
 
 def _norm(text: str) -> str:
@@ -204,7 +205,7 @@ class KeywordRulesEngine:
             "Le keyword VERIFY_PRODUCT_FEATURE richiedono conferma prima dell'uso.",
             "Backend terms: privilegia varianti non gia coperte bene in title/bullets/description.",
         ]
-        return ConfirmedKeywordPlan(
+        plan = ConfirmedKeywordPlan(
             rules_version=self.rules_version,
             keyword_primaria_finale=(core_frontend[0] if core_frontend else profile.product_detected),
             keyword_secondarie_prioritarie=secondary[:20],
@@ -215,3 +216,4 @@ class KeywordRulesEngine:
             classificazioni_confermate=classifications[:180],
             confirmed_by_user=confirmed_by_user,
         )
+        return normalize_confirmed_keyword_plan(plan)

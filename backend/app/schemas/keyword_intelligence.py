@@ -124,6 +124,14 @@ class ConfirmedKeywordPlan(BaseModel):
     confirmed_by_user: bool = False
     pipeline_metadata: dict[str, str | int | bool] | None = None
     vetoed_keywords: list[KeywordClassificationItem] = Field(default_factory=list)
+    included_keywords: list[str] = Field(
+        default_factory=list,
+        description="Keyword utilizzabili in generazione (deduplicate, senza escluse).",
+    )
+    excluded_keywords: list[str] = Field(
+        default_factory=list,
+        description="Keyword vietate in ogni output (matching case-insensitive).",
+    )
 
 
 class KeywordIntelligenceRequest(BaseModel):
