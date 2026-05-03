@@ -8,15 +8,21 @@
 
 - La gallery si compone di esattamente 8 immagini numerate da 1 a 8. Ogni immagine ha un solo ruolo narrativo.
 
+## Specifiche comuni (una sola volta)
+
+- MUST: riepilogare in un unico blocco `common_specs` (o equivalente nel JSON) canvas, formato, formato file e vincoli che valgono per tutta la gallery.
+- MUST NOT: ripetere per ogni slot 2-8 le stesse righe di dimensione/formato JPEG se gia coperte in `common_specs`.
+
 ## IMAGE 1 Main image
 
-- Scopo: immagine principale ufficiale Amazon Amazon.
+- Scopo: immagine principale ufficiale Amazon.
 - Presentazione prodotto pulita.
 - MUST: sfondo bianco puro RGB 255 255 255 o equivalente conforme policy.
 - MUST: solo il prodotto incluso nella vendita, nessun accessorio non in bundle se non dichiarato nei dati.
 - MUST NOT: overlay di testo, icone, badge, elementi decorativi, scene lifestyle.
 - MUST: il prodotto occupa la maggior parte del frame, centrato e leggibile.
-- Canvas consigliato: 2000 x 2000 px, rapporto 1:1, JPEG ad alta risoluzione.
+- Includere in `common_specs` il canvas consigliato: 2000 x 2000 px, rapporto 1:1, JPEG ad alta risoluzione.
+- Per il campo messaggio breve in grafica dell immagine 1: valore letterale `Nessuno` (nessun testo in grafica sulla main).
 
 ## IMAGE 2 Problema e soluzione
 
@@ -49,16 +55,10 @@
 - Cosa e incluso, accessori, bundle, packaging, valore aggiunto.
 - MUST: menzionare solo elementi effettivamente presenti nei dati prodotto.
 
-## Campi per ogni immagine nel brief
+## Campi per ogni immagine nel brief (JSON)
 
-- Nome immagine e ruolo.
-- Dimensione consigliata.
-- Cosa mostrare visivamente.
-- Messaggio breve possibile in grafica massimo 6-8 parole in italiano se consentito dalla policy immagine (per immagine 1 di solito nessun testo).
-- Angolo di comunicazione.
-- Indicazioni pratiche per il grafico.
-- Errori da evitare.
-- Dati prodotto da valorizzare (solo da brief).
+- title, role, visual_instructions, short_message, communication_angle, designer_instructions, mistakes_to_avoid, product_data_to_highlight.
+- NON duplicare in ogni immagine le stesse specifiche di canvas gia in `common_specs`.
 
 ## Cosa non deve mai comparire
 

@@ -1,79 +1,68 @@
 """Istruzioni strutturali per generazione Brief Creativo (non sostituiscono DOGMA)."""
 
 GALLERY_STRUCTURE = """
-Devi produrre un unico testo in italiano, in formato piano (no asterischi, no markdown).
+OUTPUT: un solo oggetto JSON valido (UTF-8). Nessun markdown, nessun testo prima o dopo il JSON.
 
-Struttura obbligatoria: esattamente 8 blocchi, uno per immagine, con queste intestazioni esatte su riga propria:
-IMAGE 1 — Main image
-IMAGE 2 — Problema / Soluzione
-IMAGE 3 — Utilizzo reale
-IMAGE 4 — Specifiche tecniche
-IMAGE 5 — Differenziazione
-IMAGE 6 — Dettagli qualità
-IMAGE 7 — Fiducia / Sicurezza / Chiarezza prodotto
-IMAGE 8 — Valore aggiunto / Bundle / Contenuto confezione
+Schema radice:
+{
+  "common_specs": string,
+  "images": array di esattamente 8 oggetti
+}
 
-Per ogni blocco includi sempre queste righe etichettate (stesso ordine):
-Nome immagine e ruolo:
-Dimensione consigliata:
-Cosa mostrare visivamente:
-Messaggio breve possibile in grafica (max 6-8 parole, oppure "Nessuno" per IMAGE 1 se vietato):
-Angolo di comunicazione:
-Indicazioni pratiche per il grafico:
-Errori da evitare:
-Dati prodotto da valorizzare:
+Ogni elemento di "images" deve avere le chiavi (tutte stringhe, italiano):
+- "title": es. "IMAGE 1 — Main image" fino a "IMAGE 8 — Valore aggiunto / Bundle / Contenuto confezione" (stessi ruoli dell'ordine classico).
+- "role": ruolo sintetico dell'immagine.
+- "visual_instructions": cosa mostrare visivamente.
+- "short_message": messaggio breve in grafica (max 6-8 parole) OPPURE per IMAGE 1 deve essere esattamente la stringa "Nessuno" (senza virgolette nel valore JSON: il valore letterale è Nessuno).
+- "communication_angle": angolo di comunicazione.
+- "designer_instructions": indicazioni pratiche per il grafico.
+- "mistakes_to_avoid": errori da evitare.
+- "product_data_to_highlight": dati prodotto da valorizzare.
 
-Per IMAGE 1 indica esplicitamente: sfondo bianco puro, solo prodotto in vendita, nessun testo overlay, icone, badge, elementi decorativi, scene lifestyle; prodotto grande e centrato; canvas 2000 x 2000 px, 1:1, JPEG ad alta risoluzione.
+NON ripetere in ogni immagine le dimensioni canvas, formato 1:1, JPEG: metti tutto in "common_specs" una sola volta (inclusa nota main image: sfondo bianco puro, solo prodotto in vendita, nessun testo overlay, icone, badge, elementi decorativi, scene lifestyle; prodotto grande e centrato; canvas 2000x2000, 1:1, JPEG ad alta risoluzione).
+
+Per IMAGE 1 ribadisci nei campi visivi i vincoli main (bianco puro, solo prodotto, no testo/icon/badge/decorative/lifestyle).
 
 Parla al designer (tu devi, crea, evita), non al cliente finale.
 """
 
 A_PLUS_STRUCTURE = """
-Devi produrre un unico testo in italiano, formato piano (no asterischi, no markdown).
+OUTPUT: un solo oggetto JSON valido (UTF-8). Nessun markdown, nessun testo fuori dal JSON.
 
-Includi un blocco iniziale che dichiara: A+ standard (non Premium A+).
+Schema radice:
+{ "modules": array di esattamente 3 oggetti }
 
-Poi un blocco esplicito:
-MODULO 4 — Video
-Testo fisso: Modulo video escluso dal MVP del brief creativo. Non generare istruzioni video.
+Solo questi moduli nell'ordine:
+1) MODULO 1 — Hero image principale (desktop 1464x600 px, mobile 600x450 px)
+2) MODULO 2 — Focus prodotto e benefici (stesse dimensioni)
+3) MODULO 3 — Come funziona (quattro sotto-immagini 300x225 px, quattro messaggi distinti)
 
-Poi i moduli con intestazioni su riga propria:
-MODULO 1 — Hero image principale
-MODULO 2 — Focus prodotto e benefici
-MODULO 3 — Come funziona
-MODULO 5 — Confronto prodotti
-MODULO 6 — FAQ A+
+Ogni modulo ha le chiavi (stringhe, italiano):
+- "title": nome modulo come sopra
+- "dimensions": riepilogo dimensioni per quel modulo
+- "visual_objective": obiettivo visivo
+- "what_to_show": cosa deve mostrare il designer
+- "suggested_text": testo breve suggerito IT (max 6-8 parole dove ha senso)
+- "layout_guidance": guida layout
+- "elements_to_highlight": elementi da evidenziare
+- "mistakes_to_avoid": errori da evitare
+- "product_data_to_use": dati prodotto da usare
 
-Per MODULO 1 indica dimensioni desktop 1464 x 600 px e mobile 600 x 450 px.
-Per MODULO 2 stesse dimensioni.
-Per MODULO 3 indica quattro sotto-immagini 300 x 225 px con quattro messaggi distinti.
-
-Per ogni modulo (tranne MODULO 4) includi:
-Nome modulo:
-Dimensioni richieste:
-Obiettivo visivo:
-Cosa deve mostrare il designer:
-Testo breve suggerito IT (max 6-8 parole dove ha senso):
-Guida layout:
-Elementi da evidenziare:
-Tono in base al livello prezzo del prodotto:
-Errori da evitare:
-Dati prodotto da usare:
-
-MODULO 5: niente confronto aggressivo con competitor; preferire linea interna o struttura generica se mancano varianti.
+VIETATO nel JSON e nel testo: Premium A+, menzione "non Premium", video, MODULO 4, confronto prodotti, MODULO 5, FAQ dentro A+ (le FAQ sono solo nell'area FAQ separata).
 
 Parla al designer, linguaggio operativo.
 """
 
 FAQ_STRUCTURE = """
-Devi produrre esattamente 5 coppie domanda-risposta in italiano, formato piano (no asterischi, no markdown).
+OUTPUT: un solo oggetto JSON valido (UTF-8). Nessun markdown.
 
-Per ogni FAQ usa:
-Domanda:
-Risposta:
+Schema radice:
+{ "faqs": array di esattamente 5 oggetti }
+
+Ogni elemento: { "question": string, "answer": string } in italiano.
 
 Regole risposta: rassicurante ma non promozionale aggressiva; pratica e concisa; nessun claim tecnico o certificazione inventata; nessuna CTA tipo acquista ora.
-Usa brief, arricchimento, obiezioni, recensioni sintetizzate, specifiche e contesto d uso dai dati forniti.
+Usa brief, arricchimento, obiezioni, recensioni sintetizzate, specifiche e contesto d'uso dai dati forniti.
 """
 
 
@@ -81,17 +70,17 @@ def system_preamble_for_area(area: str) -> str:
     if area == "gallery":
         return (
             "Sei un senior art director per listing Amazon Italia. "
-            "Il tuo output e un brief di lavoro per un grafico, non copy marketing per il cliente.\n"
+            "Il tuo output e SOLO JSON valido: un brief di lavoro per un grafico, non copy marketing per il cliente.\n"
             + GALLERY_STRUCTURE
         )
     if area == "a_plus":
         return (
-            "Sei un senior designer di moduli A+ Content Amazon (standard). "
-            "Il tuo output e un brief operativo per il team creativo.\n"
+            "Sei un senior designer di moduli A+ Content Amazon (ambito MVP: solo moduli 1-3). "
+            "Il tuo output e SOLO JSON valido: brief operativo per il team creativo.\n"
             + A_PLUS_STRUCTURE
         )
     return (
         "Sei un copywriter tecnico per FAQ ecommerce Amazon. "
-        "Il tuo output sono 5 FAQ chiare per scheda o modulo A+, non slogans.\n"
+        "Il tuo output e SOLO JSON valido: 5 FAQ chiare per scheda, non slogans.\n"
         + FAQ_STRUCTURE
     )

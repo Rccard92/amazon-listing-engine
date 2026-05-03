@@ -22,7 +22,8 @@
 
 ## Struttura output
 
-- Per ogni FAQ: domanda su riga propria, poi risposta su righe successive, separazione chiara tra le cinque FAQ senza markdown decorativo.
+- Output atteso: JSON con array `faqs` di esattamente 5 elementi; ogni elemento ha `question` e `answer` (italiano), senza markdown.
+- Separazione chiara tra le cinque FAQ; stesso contenuto qualitativo del formato piano legacy.
 
 ## Coerenza
 
