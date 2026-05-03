@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.routes import features, health, keyword_intelligence, keyword_planning, listing_generation, manual_workflow, projects, work_items
+from app.api.routes import creative_brief, features, health, keyword_intelligence, keyword_planning, listing_generation, manual_workflow, projects, work_items
 from app.core.config import get_settings
 
 
@@ -19,6 +19,7 @@ def build_api_router() -> APIRouter:
         api_router.include_router(workflows.router, tags=["workflows"])
 
     api_router.include_router(listing_generation.router, tags=["listing-generation"])
+    api_router.include_router(creative_brief.router, tags=["creative-brief"])
     api_router.include_router(keyword_intelligence.router, tags=["keyword-intelligence"])
     api_router.include_router(keyword_planning.router, tags=["keyword-planning"])
     api_router.include_router(manual_workflow.router, tags=["manual-workflow"])

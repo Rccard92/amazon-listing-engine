@@ -501,6 +501,35 @@ export const it = {
     validationTitle: "Controlli qualità",
     fromManualListingCta: "Apri generazione scheda",
   },
+  creativeBrief: {
+    phaseBadge: "Fase 5 · Brief Creativo",
+    pageTitle: "Brief Creativo",
+    pageSubtitle:
+      "Istruzioni operative per il grafico: galleria Amazon, moduli A+ standard e FAQ. Non è copy marketing per il cliente finale.",
+    tabGallery: "Galleria immagini",
+    tabAPlus: "A+ Content",
+    tabFaq: "FAQ",
+    introGallery:
+      "Brief per 8 immagini (main su sfondo bianco, ruoli successivi). Linguaggio da art director verso il designer.",
+    introAPlus:
+      "Brief per moduli A+ standard (no Premium A+). Il modulo video è escluso dall MVP.",
+    introFaq: "Cinque domande e risposte chiare per scheda o supporto A+, senza claim inventati.",
+    generate: "Genera",
+    regenerate: "Rigenera",
+    copy: "Copia",
+    copied: "Copiato",
+    saveDraft: "Salva bozza",
+    saveProject: "Salva progetto",
+    savedDraft: "Bozza aggiornata.",
+    savedProject: "Progetto salvato e contrassegnato come completato.",
+    back: "Indietro",
+    workItemHint: "Collegata alla stessa attività di Cronologia.",
+    projectStatusHint: "Stato: progetto confermato",
+    placeholder: "Genera o incolla il brief qui. Testo modificabile prima del salvataggio.",
+    loading: "Generazione in corso…",
+    errorGeneric: "Generazione non riuscita. Riprova.",
+    openFromListing: "Vai a Brief Creativo",
+  },
 } as const;
 
 export type ItCopy = typeof it;

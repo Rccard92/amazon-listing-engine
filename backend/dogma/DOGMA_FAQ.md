@@ -1,26 +1,29 @@
 # DOGMA FAQ
 
-## Temi obbligatori
+## Destinatario
 
-- Compatibilita
-- Uso corretto
-- Dimensioni e misure
-- Manutenzione / pulizia
-- Contenuto della confezione
-- Differenze tra varianti
+- Copy utile per Amazon scheda prodotto o modulo FAQ in A+. Risposte per operatori e clienti finali: chiare, concise, non promozionali in modo aggressivo.
 
-## Struttura Q/A
+## Numero e fonti
 
-- Domande realistiche e concrete.
-- Risposte brevi, verificabili e non promozionali.
-- Linguaggio chiaro, tono rassicurante ma tecnico quanto basta.
+- Generare esattamente 5 domande e risposte.
+- Usare: product brief, arricchimento strategico, obiezioni, insight recensioni se presenti, specifiche, contesto d uso.
+- MUST NOT: inventare specifiche tecniche, certificazioni o garanzie non nei dati.
 
-## Regole tono
+## Stile risposta
 
-- Evitare eccessi commerciali.
-- Evitare promesse assolute.
-- Esplicitare limiti o condizioni quando rilevante.
+- Rassicuranti ma non hype. Pratiche e concise.
+- MUST NOT: CTA aggressive tipo acquista subito.
+- Evitare risposte vuote o solo marketing.
 
-## Nota architetturale
+## Temi utili
 
-Modulo pronto per futuri generatori FAQ dedicati; non ancora runtime-attivo.
+- Compatibilita, dimensioni, uso corretto, manutenzione, pulizia, contenuto confezione, differenze varianti, precauzioni di sicurezza solo se nei dati.
+
+## Struttura output
+
+- Per ogni FAQ: domanda su riga propria, poi risposta su righe successive, separazione chiara tra le cinque FAQ senza markdown decorativo.
+
+## Coerenza
+
+- Allineare tono a livello_prezzo come nel resto del sistema.

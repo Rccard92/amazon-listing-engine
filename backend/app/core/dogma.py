@@ -20,6 +20,8 @@ H2_READINESS = "Checklist copy readiness"
 
 ListingDogmaSection = Literal["seo_title", "bullet_points", "description", "keyword_strategy"]
 
+CreativeBriefDogmaKind = Literal["gallery", "a_plus", "faq"]
+
 MODULE_GLOBAL = "DOGMA_GLOBAL.md"
 MODULE_KEYWORD_STRATEGY = "DOGMA_KEYWORD_STRATEGY.md"
 MODULE_TITLE = "DOGMA_TITLE.md"
@@ -34,6 +36,12 @@ SECTION_TO_MODULE = {
     "bullet_points": MODULE_BULLET,
     "description": MODULE_DESCRIPTION,
     "keyword_strategy": MODULE_KEYWORD_STRATEGY,
+}
+
+CREATIVE_BRIEF_KIND_TO_MODULE: dict[CreativeBriefDogmaKind, str] = {
+    "gallery": MODULE_IMAGES,
+    "a_plus": MODULE_A_PLUS,
+    "faq": MODULE_FAQ,
 }
 
 
@@ -208,6 +216,27 @@ def get_dogma_bundle_for_settings(dogma_md_path: str) -> DogmaBundle:
 def build_system_addon_for_section(bundle: DogmaBundle, section: ListingDogmaSection) -> str:
     """Restituisce addon precomposto per la sezione richiesta."""
     return bundle.addon(section)
+
+
+def build_creative_brief_dogma_addon(kind: CreativeBriefDogmaKind) -> str:
+    """
+    Composizione DOGMA_GLOBAL + modulo (IMAGES / A_PLUS / FAQ) per generazione Brief Creativo.
+    Fallback minimale se la directory modulare non e disponibile.
+    """
+    modular_dir = _default_modular_dir()
+    global_path = modular_dir / MODULE_GLOBAL
+    module_name = CREATIVE_BRIEF_KIND_TO_MODULE[kind]
+    module_path = modular_dir / module_name
+    if modular_dir.is_dir() and global_path.is_file() and module_path.is_file():
+        global_text = global_path.read_text(encoding="utf-8")
+        section_text = module_path.read_text(encoding="utf-8")
+        return _compose_modular_addon(global_text, section_text)
+    return (
+        "\n\n--- Regole brief creativo (DOGMA fallback) ---\n"
+        "Fedele ai dati confermati; nessuna certificazione o garanzia inventata.\n"
+        "Linguaggio operativo per designer; nessun markdown decorativo nell output.\n"
+        "--- Fine DOGMA ---\n"
+    )
 
 
 def invalidate_dogma_cache() -> None:

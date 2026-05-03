@@ -457,6 +457,15 @@ function ListingGenerazioneContent() {
             >
               {p.actions.saveProject}
             </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={saving}
+              onClick={() => router.push(`/brief-creativo?workItemId=${workItemId}`)}
+            >
+              {it.creativeBrief.openFromListing}
+            </Button>
             {saveHint ? <span className="text-xs text-slate-500">{saveHint}</span> : null}
           </div>
         ) : null}

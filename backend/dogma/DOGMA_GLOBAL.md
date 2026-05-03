@@ -3,9 +3,17 @@
 ## Principi condivisi
 
 - Il copy deve restare fedele ai dati del brief e dell'arricchimento confermato.
-- Non inventare claim, certificazioni o promesse non presenti nei dati.
+- Non inventare claim, certificazioni, garanzie o risultati non presenti esplicitamente nei dati prodotto.
 - Evitare keyword stuffing, ripetizioni meccaniche e testo promozionale aggressivo.
 - Usare italiano naturale per marketplace Amazon Italia.
+
+## Brief creativo (grafica)
+
+- Il destinatario del testo e il grafico o il responsabile produzione asset, non il cliente finale.
+- Linguaggio operativo, preciso, eseguibile: cosa disegnare, cosa mostrare, dimensioni, cosa evitare.
+- Vietato output poetico, generico o da brochure marketing vuota.
+- Vietato usare asterischi, markdown decorativo, elenchi puntati con simboli speciali nell output del brief (testo piano con intestazioni su riga propria).
+- Vietati superlativi assoluti tipo migliore al mondo, numero uno, unico al mondo se non supportati dai dati.
 
 ## Tono e registro
 
